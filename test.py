@@ -47,31 +47,47 @@ Ep_old = torch.zeros((n_points, 6), device=device)  # Old plastic strain
 print(f"11 strain values:\n{strain_exp.base[0]}")
 print(f"11 stress values:\n{stress_exp.base[0]}")
 
-# Gradient descent loop
-gamma = 1e-3
-loss_history = []
-eta_history = []
-n_history = []
-n_iter = 1000
-
-# Create optimizable parameters - start with just yield stress for stability
+# Parameter optimization setup using individual parameters (maintaining gradient flow)
+# Create optimizable parameters directly from model parameters
 sy = model.yield_function_sy.torch().clone().detach().to(device).requires_grad_(True)
-print(f"Initial Parameter to optimize:\n sy: {sy.item()}")
-print(f"Parameter device: {sy.device}")
+eta = model.flow_rate_eta.torch().clone().detach().to(device).requires_grad_(True)
+n = model.flow_rate_n.torch().clone().detach().to(device).requires_grad_(True)
 
-optim = torch.optim.Adam([sy], lr=gamma)
+# Store parameters in a list for easy iteration
+params = [sy, eta, n]
+param_names = ['sy', 'eta', 'n']
+
+# Learning rates for each parameter (different scales)
+learning_rates = [1e-3, 1e-7, 1e-6]  # [sy, eta, n]
+
+# History tracking
+loss_history = []
+params_history = []  # Will store [sy, eta, n] at each iteration
+n_iter = 2000  # Reduced iterations to prevent getting stuck
+
+print(f"Initial Parameters to optimize:")
+print(f" sy: {sy.item():.6f}")
+print(f" eta: {eta.item():.6f}")
+print(f" n: {n.item():.6f}")
+print(f"Parameter device: {sy.device}\n")
 
 print(f"Starting optimization loop with {n_points} data points...")
 
 for i in range(n_iter):
-    # Clear gradients manually
-    sy.grad = None
+    # Clear gradients for all parameters
+    for param in params:
+        if param.grad is not None:
+            param.grad.zero_()
     
-    # Update model parameter while maintaining gradient connection
+    # Update model parameters while maintaining gradient connection
     model.yield_function_sy = neml2.Scalar(sy)
+    model.flow_rate_eta = neml2.Scalar(eta)
+    model.flow_rate_n = neml2.Scalar(n)
     
-    # Enable gradients on model parameter
+    # Enable gradients on model parameters
     model.yield_function_sy.requires_grad_(True)
+    model.flow_rate_eta.requires_grad_(True)
+    model.flow_rate_n.requires_grad_(True)
 
     # Calculate model output and loss with all required inputs
     try:
@@ -83,60 +99,80 @@ for i in range(n_iter):
             "state/internal/Ep": SR2(Ep_old)  # Initial guess
         }
         
+        # Calculate model output
         output = model.value(model_input)
         stress = output["state/S"]
-        # Option 1: Current approach (L2 norm squared - equivalent to sum of squared errors)
-        loss = torch.linalg.norm(stress.torch() - stress_exp.torch())**2
+
+        # Calculate loss
+        loss = torch.nn.functional.mse_loss(stress.torch(), stress_exp.torch(), reduction='sum')
         
-        # Option 2: Using PyTorch's MSE loss (uncomment to use this instead)
-        # loss = torch.nn.functional.mse_loss(stress.torch(), stress_exp.torch(), reduction='sum')
-        
-        # Record (append) states
+        # Record states
         loss_history.append(loss.item())
-        eta_history.append(sy.item())  # Using sy as the tracked parameter
-        n_history.append(sy.item())    # Dummy value for compatibility
-        
+        params_history.append([p.item() for p in params])  # Store parameter values
+
         if i % 10 == 0:  # Print every 10 iterations
-            print(f"Iteration {i}: Loss = {loss.item():.6f}, sy = {sy.item():.6f}")
-            print(f"  Requires grad - sy: {sy.requires_grad}")
+            print(f"Iteration {i}: Loss = {loss.item():.6f}, sy = {sy.item():.6f}, eta = {eta.item():.6f}, n = {n.item():.6f}")
+            print(f"  Requires grad - sy: {sy.requires_grad}, eta: {eta.requires_grad}, n: {n.requires_grad}")
 
         # Compute gradients
         loss.backward()
         
         if i % 10 == 0:  # Print gradient info
-            if sy.grad is not None:
-                print(f"  Gradient - sy: {sy.grad.item():.6f}")
-            else:
-                print(f"  Gradient is None")
+            grad_info = []
+            for j, (param, name) in enumerate(zip(params, param_names)):
+                if param.grad is not None:
+                    grad_info.append(f"{name}: {param.grad.item():.6f}")
+                else:
+                    grad_info.append(f"{name}: None")
+            print(f"  Gradients - {', '.join(grad_info)}")
         
-        # Manual parameter update using gradients on sy
+        # Manual parameter update with individual learning rates
         with torch.no_grad():
-            if sy.grad is not None:
-                sy -= gamma * sy.grad
-                
-                # Apply constraints (yield stress should be positive)
-                sy.data = torch.clamp(sy.data, min=1e-6)
-                
-                # Clear gradients for next iteration
-                sy.grad.zero_()
-            else:
-                if i == 0:  # Only warn on first iteration
-                    print("Warning: No gradients computed")
-    
+            for j, param in enumerate(params):
+                if param.grad is not None:
+                    # Apply learning rate specific to this parameter
+                    param -= learning_rates[j] * param.grad
+
     except Exception as e:
         print(f"Error at iteration {i}: {e}")
+        print(f"  Parameter values at error: sy={sy.item():.3f}, eta={eta.item():.3f}, n={n.item():.3f}")
         break
 
 # Plot results
 if len(loss_history) > 0:
-    fig, ax = plt.subplots()
-    iterations = torch.arange(len(loss_history))
-    ax.plot(iterations, loss_history, 'k-', label='loss')
-    ax.set_xlabel('Iteration')
-    ax.set_ylabel('Loss')
-    ax.legend()
+    # Convert parameter history to arrays for plotting
+    params_array = torch.tensor(params_history)
+    sy_history = params_array[:, 0].numpy()
+    eta_history = params_array[:, 1].numpy()
+    n_history = params_array[:, 2].numpy()
+    
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+    iterations = range(len(loss_history))
+    
+    # Plot loss
+    ax1.plot(iterations, loss_history, 'k-', label='Loss')
+    ax1.set_xlabel('Iteration')
+    ax1.set_ylabel('Loss')
+    ax1.set_yscale('log')
+    ax1.legend()
+    ax1.grid(True)
+    
+    # Plot parameters
+    ax2.plot(iterations, sy_history, 'b-', label='sy (MPa)')
+    ax2.plot(iterations, eta_history, 'r-', label='eta')
+    ax2.plot(iterations, n_history, 'g-', label='n')
+    ax2.set_xlabel('Iteration')
+    ax2.set_ylabel('Parameter values')
+    ax2.legend()
+    ax2.grid(True)
+    
+    plt.tight_layout()
     plt.show()
+    
     print(f"Final loss: {loss_history[-1]:.6f}")
-    print(f"Final sy: {sy.item():.6f}")
+    print(f"Final parameters:")
+    print(f"  sy: {params[0].item():.6f} MPa")
+    print(f"  eta: {params[1].item():.6f}")
+    print(f"  n: {params[2].item():.6f}")
 else:
     print("No optimization data to plot - optimization may have failed immediately")

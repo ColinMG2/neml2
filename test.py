@@ -58,7 +58,7 @@ params = [sy, eta, n]
 param_names = ['sy', 'eta', 'n']
 
 # Learning rates for each parameter (different scales)
-learning_rates = [1e-3, 1e-7, 1e-6]  # [sy, eta, n]
+learning_rates = [1e-3, 5e-8, 1e-6]  # [sy, eta, n]
 
 # History tracking
 loss_history = []
@@ -132,7 +132,7 @@ for i in range(n_iter):
                 if param.grad is not None:
                     # Apply learning rate specific to this parameter
                     param -= learning_rates[j] * param.grad
-
+        
     except Exception as e:
         print(f"Error at iteration {i}: {e}")
         print(f"  Parameter values at error: sy={sy.item():.3f}, eta={eta.item():.3f}, n={n.item():.3f}")
@@ -146,18 +146,19 @@ if len(loss_history) > 0:
     eta_history = params_array[:, 1].numpy()
     n_history = params_array[:, 2].numpy()
     
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+    fig, ax1= plt.subplots(figsize=(10, 8))
     iterations = range(len(loss_history))
     
     # Plot loss
     ax1.plot(iterations, loss_history, 'k-', label='Loss')
-    ax1.set_xlabel('Iteration')
-    ax1.set_ylabel('Loss')
+    ax1.set_xscale('log')
     ax1.set_yscale('log')
+    ax1.set_ylabel('Loss')
     ax1.legend()
     ax1.grid(True)
     
     # Plot parameters
+    ax2 = ax1.twinx()
     ax2.plot(iterations, sy_history, 'b-', label='sy (MPa)')
     ax2.plot(iterations, eta_history, 'r-', label='eta')
     ax2.plot(iterations, n_history, 'g-', label='n')

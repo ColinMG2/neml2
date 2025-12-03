@@ -41,7 +41,7 @@
     []
     [flow_rate]
         type = PerzynaPlasticFlowRate
-        reference_stress = 100
+        reference_stress = 65
         exponent = 2
     []
     [Eprate]

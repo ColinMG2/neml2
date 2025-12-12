@@ -19,11 +19,19 @@ model.to(device=device)  # Move model to the same device using named parameter
 print(model)
 
 # Load experimental data
-data = pd.read_csv("/home/colinmoose/neml2/Tensile_1_Fig_16.csv")
+rm_data = pd.read_csv("/home/colinmoose/neml2/cmg_projects/tensile_data/Tensile_1_Fig_16.csv")
+temp1_data = pd.read_csv("/home/colinmoose/neml2/cmg_projects/tensile_data/Tensile_1_Fig_18_Temp_621C.csv")
+temp2_data = pd.read_csv("/home/colinmoose/neml2/cmg_projects/tensile_data/Tensile_1_Fig17_Temp_516C.csv")
+temp3_data = pd.read_csv("/home/colinmoose/neml2/cmg_projects/tensile_data/Tensile_1_Fig_19_Temp 700C.csv")
 
 # For tensile test, we need to create proper strain tensors
-strain_11_exp = torch.tensor(data['x'].values, device=device)  # Axial strain
-stress_11_exp = torch.tensor(data['y'].values, device=device)  # Axial stress
+strain_11_exp = torch.tensor(rm_data['x'].values, device=device)  # Axial strain
+stress_11_exp = torch.tensor(rm_data['y'].values, device=device)  # Axial stress
+
+# Clip values to not include values after ultimate tensile strength
+max_stress_idx = torch.argmax(stress_11_exp).item()
+strain_11_exp = strain_11_exp[:max_stress_idx + 1]
+stress_11_exp = stress_11_exp[:max_stress_idx + 1]
 
 # Create strain and stress tensor inputs for the model
 # For a tensile test, strain tensor has only 11 component non-zero
@@ -138,6 +146,10 @@ for i in range(n_iter):
         print(f"  Parameter values at error: sy={sy.item():.3f}, eta={eta.item():.3f}, n={n.item():.3f}")
         break
 
+# Generate Initial Results
+with torch.no_grad():
+    initial_results = model(model_input)
+
 # Plot results
 if len(loss_history) > 0:
     # Convert parameter history to arrays for plotting
@@ -166,6 +178,15 @@ if len(loss_history) > 0:
     ax2.set_ylabel('Parameter values')
     ax2.legend()
     ax2.grid(True)
+
+    # Plot model stress vs strain graph comparing to exp data
+    plt.figure()
+    plt.plot(strain_11_exp, stress_11_exp, 'k--', label="exp_data")
+    plt.plot(strain_11_exp, initial_results, 'b', label="init_guess")
+    plt.xlabel("Strain")
+    plt.ylabel("Stress (MPa)")
+    plt.grid()
+
     
     plt.tight_layout()
     plt.show()

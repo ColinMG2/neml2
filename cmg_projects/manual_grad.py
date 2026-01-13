@@ -3,6 +3,7 @@ from neml2 import SR2
 import torch
 import matplotlib.pyplot as plt
 import pandas as pd
+import os
 
 torch.set_default_dtype(torch.double)
 if torch.cuda.is_available():
@@ -14,28 +15,65 @@ else:
     print("CUDA is not available")
 device = torch.device(dev)
 
-model = neml2.load_model("test_model.i", "model")
+model = neml2.load_model("test_model.i", "prediction")
 model.to(device=device)  # Move model to the same device using named parameter
 print(model)
 
 # Load experimental data
-rm_data = pd.read_csv("/home/colinmoose/neml2/cmg_projects/tensile_data/Tensile_1_Fig_16.csv")
-temp1_data = pd.read_csv("/home/colinmoose/neml2/cmg_projects/tensile_data/Tensile_1_Fig_18_Temp_621C.csv")
-temp2_data = pd.read_csv("/home/colinmoose/neml2/cmg_projects/tensile_data/Tensile_1_Fig17_Temp_516C.csv")
-temp3_data = pd.read_csv("/home/colinmoose/neml2/cmg_projects/tensile_data/Tensile_1_Fig_19_Temp 700C.csv")
+path = '/home/colinmoose/neml2/cmg_projects/tensile_data'
+data_frames = {}
+for filename in os.listdir(path):
+    if filename.endswith(".csv"):
+        file_path = os.path.join(path, filename)
+        df = pd.read_csv(file_path)
+        if '621C' in filename:
+            temp_label = '621C'
+        elif '700C' in filename:
+            temp_label = '700C'
+        elif 'RT' in filename:
+            temp_label = 'RT'
+        elif '516C' in filename:
+            temp_label = '516C'
+        else:
+            temp_label = 'unknown'
+        
+        new_df = df.rename(columns={'x':f'{temp_label}_strain', 'y':f'{temp_label}_stress'})
+        data_frames[temp_label] = new_df
 
-# For tensile test, we need to create proper strain tensors
-strain_11_exp = torch.tensor(rm_data['x'].values, device=device)  # Axial strain
-stress_11_exp = torch.tensor(rm_data['y'].values, device=device)  # Axial stress
+strain_data = {}
+stress_data = {}
 
-# Clip values to not include values after ultimate tensile strength
-max_stress_idx = torch.argmax(stress_11_exp).item()
-strain_11_exp = strain_11_exp[:max_stress_idx + 1]
-stress_11_exp = stress_11_exp[:max_stress_idx + 1]
+for temp_label, df in data_frames.items():
+    strain_col = f'{temp_label}_strain'
+    stress_col = f'{temp_label}_stress'
+    strain = torch.tensor(df[strain_col].values, device=device)
+    stress = torch.tensor(df[stress_col].values, device=device)
+    max_stress_idx = torch.argmax(stress).item()
+    strain = strain[:max_stress_idx + 1]
+    stress = stress[:max_stress_idx + 1]
+    strain = strain[:] - strain[0]
+    stress = stress[:] - stress[0]
+    strain_data[temp_label] = strain
+    stress_data[temp_label] = stress
+    print(f"For {temp_label}_data:\nStrain:\n{strain_data[temp_label]}\nStress:\n{stress_data[temp_label]}")
+
+# Plot initial dataset
+plt.figure()
+for temp_label in strain_data:
+    plt.plot(strain_data[temp_label].cpu().numpy(), stress_data[temp_label].cpu().numpy(), label=f"{temp_label}C")
+plt.xlabel('Strain')
+plt.ylabel('Stress (MPa)')
+plt.title('Initial Dataset')
+plt.grid()
+plt.legend()
+plt.savefig('clipped_init_data.png')
 
 # Create strain and stress tensor inputs for the model
 # For a tensile test, strain tensor has only 11 component non-zero
 # SR2 in NEML2 uses Voigt notation: [11, 22, 33, 23, 13, 12]
+strain_11_exp = strain_data['RT']
+stress_11_exp = stress_data['RT']
+
 n_points = len(strain_11_exp)
 
 strain_tensor = torch.zeros((n_points, 6), device=device)
@@ -47,31 +85,57 @@ stress_tensor[:, 0] = stress_11_exp
 strain_exp = SR2(strain_tensor)
 stress_exp = SR2(stress_tensor)
 
-# Create time inputs (required for the model)
-t_current = torch.ones(n_points, device=device) * 1.0  # Current time
-t_old = torch.zeros(n_points, device=device)  # Old time
-Ep_old = torch.zeros((n_points, 6), device=device)  # Old plastic strain
+strain_vals = strain_exp.torch()[:, 0]
+stress_results = []
 
-print(f"11 strain values:\n{strain_exp.base[0]}")
-print(f"11 stress values:\n{stress_exp.base[0]}")
+# Model inputs
+model_input = {
+    "forces/E": strain_exp,
+    "forces/t": neml2.Scalar.full(1, device=device)
+
+}
+
+# Calculate input
+with torch.no_grad():
+    init_output = model.value(model_input)
+
+input_strain = strain_exp.torch()[:,0]
+init_stress = init_output["state/S"].torch()
+print(f"Initial strain input:\n{input_strain}\n")
+print(f"Initial strain input size:\n{input_strain.size()}")
+print(f"Initial model output:\n{init_stress}")
+print(f"Initial model output size:\n{init_stress.size()}")
+
+plt.figure()
+plt.plot(input_strain.cpu().detach().numpy(), init_stress.cpu().detach().numpy()[:,0],'r--')
+plt.xlabel('Strain')
+plt.ylabel('Stress (MPa)')
+plt.title('Initial Model Output')
+plt.savefig('init_model_output.png')
 
 # Parameter optimization setup using individual parameters (maintaining gradient flow)
 # Create optimizable parameters directly from model parameters
-sy = model.yield_function_sy.torch().clone().detach().to(device).requires_grad_(True)
-eta = model.flow_rate_eta.torch().clone().detach().to(device).requires_grad_(True)
-n = model.flow_rate_n.torch().clone().detach().to(device).requires_grad_(True)
+sy = model.eq4_sy.torch().clone().detach().to(device).requires_grad_(True)
+eta = model.eq6_eta.torch().clone().detach().to(device).requires_grad_(True)
+n = model.eq6_n.torch().clone().detach().to(device).requires_grad_(True)
 
 # Store parameters in a list for easy iteration
 params = [sy, eta, n]
 param_names = ['sy', 'eta', 'n']
 
 # Learning rates for each parameter (different scales)
-learning_rates = [1e-3, 5e-8, 1e-6]  # [sy, eta, n]
+learning_rates = [1e-3, 1e-7, 1e-6]
+
+# setup SGD optimizer without momentum (simple GD) for each parameter and respective learning rates
+optim = torch.optim.SGD([
+                                {'params':[sy], 'lr': learning_rates[0]},
+                                {'params':[eta], 'lr': learning_rates[1]},
+                                {'params':[n], 'lr': learning_rates[2]}])
 
 # History tracking
 loss_history = []
-params_history = []  # Will store [sy, eta, n] at each iteration
-n_iter = 2000  # Reduced iterations to prevent getting stuck
+params_history = []
+n_iter = 2000
 
 print(f"Initial Parameters to optimize:")
 print(f" sy: {sy.item():.6f}")
@@ -81,35 +145,28 @@ print(f"Parameter device: {sy.device}\n")
 
 print(f"Starting optimization loop with {n_points} data points...")
 
+# Generate Initial Results BEFORE optimization
+with torch.no_grad():
+    initial_output = model.value(model_input)
+    initial_stress = initial_output["state/S"].torch()[:,0]
+
 for i in range(n_iter):
-    # Clear gradients for all parameters
-    for param in params:
-        if param.grad is not None:
-            param.grad.zero_()
+    # initialize gradients to zero
+    optim.zero_grad()
     
     # Update model parameters while maintaining gradient connection
-    model.yield_function_sy = neml2.Scalar(sy)
-    model.flow_rate_eta = neml2.Scalar(eta)
-    model.flow_rate_n = neml2.Scalar(n)
+    model.eq4_sy = neml2.Scalar(sy)
+    model.eq6_eta = neml2.Scalar(eta)
+    model.eq6_n = neml2.Scalar(n)
     
     # Enable gradients on model parameters
-    model.yield_function_sy.requires_grad_(True)
-    model.flow_rate_eta.requires_grad_(True)
-    model.flow_rate_n.requires_grad_(True)
+    model.eq4_sy.requires_grad_(True)
+    model.eq6_eta.requires_grad_(True)
+    model.eq6_n.requires_grad_(True)
 
-    # Calculate model output and loss with all required inputs
     try:
-        model_input = {
-            "forces/E": strain_exp,
-            "forces/t": neml2.Scalar(t_current),
-            "old_forces/t": neml2.Scalar(t_old),
-            "old_state/internal/Ep": SR2(Ep_old),
-            "state/internal/Ep": SR2(Ep_old)  # Initial guess
-        }
-        
         # Calculate model output
-        output = model.value(model_input)
-        stress = output["state/S"]
+        stress = model.value(model_input)["state/S"]
 
         # Calculate loss
         loss = torch.nn.functional.mse_loss(stress.torch(), stress_exp.torch(), reduction='sum')
@@ -120,12 +177,18 @@ for i in range(n_iter):
 
         if i % 10 == 0:  # Print every 10 iterations
             print(f"Iteration {i}: Loss = {loss.item():.6f}, sy = {sy.item():.6f}, eta = {eta.item():.6f}, n = {n.item():.6f}")
-            print(f"  Requires grad - sy: {sy.requires_grad}, eta: {eta.requires_grad}, n: {n.requires_grad}")
-
+        
         # Compute gradients
         loss.backward()
-        
-        if i % 10 == 0:  # Print gradient info
+
+        # Copy gradients from NEML2 model parameters to torch optimizer parameters
+        sy.grad = model.eq4_sy.torch().grad.clone()
+        eta.grad = model.eq6_eta.torch().grad.clone()
+        n.grad = model.eq6_n.torch().grad.clone()
+
+        optim.step()
+
+        if i % 10 == 0:
             grad_info = []
             for j, (param, name) in enumerate(zip(params, param_names)):
                 if param.grad is not None:
@@ -134,21 +197,17 @@ for i in range(n_iter):
                     grad_info.append(f"{name}: None")
             print(f"  Gradients - {', '.join(grad_info)}")
         
-        # Manual parameter update with individual learning rates
-        with torch.no_grad():
-            for j, param in enumerate(params):
-                if param.grad is not None:
-                    # Apply learning rate specific to this parameter
-                    param -= learning_rates[j] * param.grad
-        
     except Exception as e:
         print(f"Error at iteration {i}: {e}")
         print(f"  Parameter values at error: sy={sy.item():.3f}, eta={eta.item():.3f}, n={n.item():.3f}")
         break
 
-# Generate Initial Results
+# Generate final prediction with optimized parameters
 with torch.no_grad():
-    initial_results = model(model_input)
+    model.eq2_G = neml2.Scalar.full(params[0], device=device)
+    model.eq2_K = neml2.Scalar.full(params[1], device=device)
+    final_output = model.value(model_input)
+    final_stress = final_output["state/S"].torch()[:,0]
 
 # Plot results
 if len(loss_history) > 0:
@@ -178,16 +237,20 @@ if len(loss_history) > 0:
     ax2.set_ylabel('Parameter values')
     ax2.legend()
     ax2.grid(True)
+    plt.savefig('Loss_history.png')
 
     # Plot model stress vs strain graph comparing to exp data
     plt.figure()
-    plt.plot(strain_11_exp, stress_11_exp, 'k--', label="exp_data")
-    plt.plot(strain_11_exp, initial_results, 'b', label="init_guess")
+    plt.plot(strain_data['RT'].cpu().numpy(), stress_data['RT'].cpu().numpy(), 'k--', label="exp_data")
+    plt.plot(strain_11_exp.cpu().numpy(), initial_stress.cpu().detach().numpy(), 'b-', label="init_guess")
+    plt.plot(strain_11_exp.cpu().numpy(), final_stress.cpu().detach().numpy(), 'r-', label="final_guess")
     plt.xlabel("Strain")
     plt.ylabel("Stress (MPa)")
     plt.grid()
+    plt.legend()
+    plt.title("Stress vs. Strain")
+    plt.savefig('stress_strain_comp.png')
 
-    
     plt.tight_layout()
     plt.show()
     

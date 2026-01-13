@@ -1,70 +1,79 @@
 [Solvers]
     [newton]
         type = Newton
+        rel_tol = 1e-08
+        abs_tol = 1e-10
+        max_its = 50
+        verbose = true
     []
 []
 
 [Models]
-    [elastic_strain]
+    [eq1]
         type = SR2LinearCombination
-        from_var = 'forces/E state/internal/Ep'
-        to_var = 'state/internal/Ee'
+        from_var = 'forces/E state/Ep'
+        to_var = 'state/Ee'
         coefficients = '1 -1'
     []
-    [elasticity]
+    [eq2]
         type = LinearIsotropicElasticity
-        strain = 'state/internal/Ee'
+        strain = 'state/Ee'
         stress = 'state/S'
         coefficient_types = 'SHEAR_MODULUS BULK_MODULUS'
-        coefficients = '1.4e5 7.8e4'
+        coefficients = '38.5e3 83.3e3'
     []
-    [effective_stress]
+    [eq3]
         type = SR2Invariant
         invariant_type = 'VONMISES'
         tensor = 'state/S'
-        invariant = 'state/internal/s'
+        invariant = 'state/s'
     []
-    [yield_function]
+    [eq4]
         type = YieldFunction
-        yield_stress = 5
+        yield_stress = 150
+        yield_function = 'state/fp'
+        effective_stress = 'state/s'
     []
     [flow]
         type = ComposedModel
-        models = 'effective_stress yield_function'
+        models = 'eq3 eq4'
     []
-    [normality]
+    [eq5]
         type = Normality
         model = 'flow'
-        function = 'state/internal/fp'
+        function = 'state/fp'
         from = 'state/S'
-        to = 'state/internal/NM'
+        to = 'state/N'
     []
-    [flow_rate]
+    [eq6]
         type = PerzynaPlasticFlowRate
-        reference_stress = 65
+        reference_stress = 100
         exponent = 2
+        yield_function = 'state/fp'
+        flow_rate = 'state/gamma_rate'
     []
-    [Eprate]
+    [eq7]
         type = AssociativePlasticFlow
+        flow_rate = 'state/gamma_rate'
+        flow_direction = 'state/N'
+        plastic_strain_rate = 'state/Ep_rate'
     []
-    [integrate_Ep]
+    [eq8]
         type = SR2BackwardEulerTimeIntegration
-        variable = 'state/internal/Ep'
+        variable = 'state/Ep'
     []
-    [implicit_rate]
+    [system]
         type = ComposedModel
-        models = "elastic_strain elasticity effective_stress
-                  yield_function flow_rate normality
-                  Eprate integrate_Ep"
-    []
-    [return_map]
-        type = ImplicitUpdate
-        implicit_model = 'implicit_rate'
-        solver = 'newton'
+        models = "eq1 eq2 flow eq5 eq6 eq7 eq8"
     []
     [model]
+        type = ImplicitUpdate
+        implicit_model = 'system'
+        solver = 'newton'
+    []
+    [prediction]
         type = ComposedModel
-        models = "return_map elastic_strain elasticity"
-        additional_outputs = 'state/internal/Ep'
+        models = 'model eq1 eq2'
+        additional_outputs = 'state/S'
     []
 []

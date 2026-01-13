@@ -5,6 +5,7 @@ from pyzag import nonlinear, reparametrization, chunktime
 import matplotlib.pyplot as plt
 import tqdm
 import pandas as pd
+import os
 
 torch.manual_seed(0)
 
@@ -24,7 +25,52 @@ nchunk = 50     # nchunk parameter controls the time integration in pyzag
                 # optimal value depends on compute device
 
 # Load in experimental datasets for tensile tests of HT9 at various temperatures
-rt_data = pd.read_csv('/home/colinmoose/neml2/cmg_projects/Tensile_1_Fig_16.csv')   #room temp (RT)
+path = '/home/colinmoose/neml2/cmg_projects/tensile_data'
+data_frames = {}
+for filename in os.listdir(path):
+    if filename.endswith(".csv"):
+        file_path = os.path.join(path, filename)
+        df = pd.read_csv(file_path)
+        if '621C' in filename:
+            temp_label = '621C'
+        elif '700C' in filename:
+            temp_label = '700C'
+        elif 'RT' in filename:
+            temp_label = 'RT'
+        elif '516C' in filename:
+            temp_label = '516C'
+        else:
+            temp_label = 'unknown'
+        
+        new_df = df.rename(columns={'x':f'{temp_label}_strain', 'y':f'{temp_label}_stress'})
+        data_frames[temp_label] = new_df
+
+strain_data = {}
+stress_data = {}
+
+for temp_label, df in data_frames.items():
+    strain_col = f'{temp_label}_strain'
+    stress_col = f'{temp_label}_stress'
+    strain = torch.tensor(df[strain_col].values, device=device)
+    stress = torch.tensor(df[stress_col].values, device=device)
+    max_stress_idx = torch.argmax(stress).item()
+    strain = strain[:max_stress_idx + 1]
+    stress = stress[:max_stress_idx + 1]
+    strain = strain[:] - strain[0]
+    stress = stress[:] - stress[0]
+    strain_data[temp_label] = strain
+    stress_data[temp_label] = stress
+    print(f"For {temp_label}_data:\nStrain:\n{strain_data[temp_label]}\nStress:\n{stress_data[temp_label]}")
+
+# Plot initial dataset
+plt.figure()
+for temp_label in strain_data:
+    plt.plot(strain_data[temp_label].cpu().numpy(), stress_data[temp_label].cpu().numpy(), label=f"{temp_label}C")
+plt.xlabel('Strain')
+plt.ylabel('Stress (MPa)')
+plt.title('Initial Dataset')
+plt.grid()
+plt.legend()
 
 class SolveStrain(torch.nn.Module):
     """Just integrate the model through some strain history
@@ -82,4 +128,9 @@ class SolveStrain(torch.nn.Module):
             self.cached_solution = result.detach().clone()
 
         return result[...,0:1]
+
+nmodel = neml2.load_model("chaboche_model.i", "implicit_rate")
+nmodel.to(device = device)
+print(nmodel)
+model = SolveStrain(neml2.pyzag.NEML2PyzagModel(nmodel, exclude_parameters = ["elasticity_E", "elasticity_nu","X1rate_A", "X1rate_C", "X1rate_a", "X1rate_g","yield_sy"]))
 

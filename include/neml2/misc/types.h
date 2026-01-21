@@ -28,6 +28,9 @@
 #include <c10/core/TensorOptions.h>
 #include <c10/core/Scalar.h>
 
+// preprocessor macros
+#include "neml2/config.h"
+
 namespace at
 {
 class Tensor;
@@ -92,5 +95,6 @@ std::ostream & operator<<(std::ostream & os, FType f);
 constexpr auto eps = std::numeric_limits<double>::epsilon();
 constexpr double sqrt2 = 1.4142135623730951;
 constexpr double invsqrt2 = 0.7071067811865475;
+constexpr double pi = M_PI;
 ///@}
 } // namespace neml2

@@ -46,7 +46,7 @@ SR2 inv(const SR2 &);
 ///@}
 
 ///@{
-/// Inverse of a fourth order tensor, i.e., $A^{-1}_{ijmn} A_{mnkl} = \delta_{il} \delta_{jk}$
+/// Inverse of a fourth order tensor, i.e., \f$A^{-1}_{ijmn} A_{mnkl} = \delta_{il} \delta_{jk}\f$
 R4 inv(const R4 &);
 SSR4 inv(const SSR4 &);
 ///@}

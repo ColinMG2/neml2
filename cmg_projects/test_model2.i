@@ -1,14 +1,37 @@
-[Solvers]
-    [newton]
-        type = Newton
-        rel_tol = 1e-08
-        abs_tol = 1e-10
-        max_its = 50
-        verbose = false
-    []
+[Tensors]
+  [T_train]
+    type = Scalar
+    values = '400.0 500.0 600.0'
+    batch_shape = '(3)'
+    intermediate_dimension = 1
+  []
+  [R_values]
+    type = Scalar
+    values = '300.0 200.0 100.0'
+    batch_shape = '(3)'
+    intermediate_dimension = 1
+  []
+  [d_values]
+    type = Scalar
+    values = '30.0 20.0 15.0'
+    batch_shape = '(3)'
+    intermediate_dimension = 1
+  []
 []
 
 [Models]
+  [R]
+    type = ScalarLinearInterpolation
+    argument = 'forces/T'
+    abscissa = 'T_train'
+    ordinate = 'R_values'
+  []
+  [d]
+    type = ScalarLinearInterpolation
+    argument = 'forces/T'
+    abscissa = 'T_train'
+    ordinate = 'd_values'
+  []
   [mandel_stress]
     type = IsotropicMandelStress
   []
@@ -18,9 +41,15 @@
     tensor = 'state/internal/M'
     invariant = 'state/internal/s'
   []
+  [isoharden]
+    type = VoceIsotropicHardening
+    saturated_hardening = 'R'
+    saturation_rate = 'd'
+  []
   [yield]
     type = YieldFunction
     yield_stress = 10
+    isotropic_hardening = 'state/internal/k'
   []
   [flow]
     type = ComposedModel
@@ -30,8 +59,8 @@
     type = Normality
     model = 'flow'
     function = 'state/internal/fp'
-    from = 'state/internal/M'
-    to = 'state/internal/NM'
+    from = 'state/internal/M state/internal/k'
+    to = 'state/internal/NM state/internal/Nk'
   []
   [flow_rate]
     type = PerzynaPlasticFlowRate
@@ -40,6 +69,9 @@
   []
   [Eprate]
     type = AssociativePlasticFlow
+  []
+  [eprate]
+    type = AssociativeIsotropicPlasticHardening
   []
   [Erate]
     type = SR2VariableRate
@@ -62,13 +94,30 @@
     type = SR2BackwardEulerTimeIntegration
     variable = 'state/S'
   []
+  [integrate_ep]
+    type = ScalarBackwardEulerTimeIntegration
+    variable = 'state/internal/ep'
+  []
+  [mixed]
+    type = MixedControlSetup
+    above_variable = 'state/S'
+    below_variable = 'forces/E'
+  []
+  [mixed_old]
+    type = MixedControlSetup
+    control = 'old_forces/control'
+    mixed_state = 'old_state/mixed_state'
+    fixed_values = 'old_forces/fixed_values'
+    above_variable = 'old_state/S'
+    below_variable = 'old_forces/E'
+  []
+  [rename]
+    type = CopySR2
+    from = 'residual/S'
+    to = 'resiudal/mixed_state'
+  []
   [implicit_rate]
     type = ComposedModel
-    models = 'mandel_stress vonmises yield normality flow_rate Eprate Erate Eerate elasticity integrate_stress'
-  []
-  [model]
-    type = ImplicitUpdate
-    implicit_model = 'implicit_rate'
-    solver = 'newton'
+    models = 'mandel_stress vonmises isoharden yield normality flow_rate Eprate eprate Erate Eerate elasticity integrate_stress integrate_ep mixed mixed_old rename'
   []
 []

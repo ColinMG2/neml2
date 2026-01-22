@@ -9,6 +9,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "OFF",
+        "CMAKE_PREFIX_PATH": "/home/colinmoose/miniforge/envs/neml2/lib/python3.13/site-packages/torch",
         "NEML2_PCH": "ON",
         "NEML2_TESTS": "ON",
         "NEML2_RUNNER": "ON",
@@ -16,7 +17,10 @@
         "NEML2_DOC": "OFF",
         "NEML2_WORK_DISPATCHER": "ON",
         "NEML2_JSON": "ON",
-        "NEML2_CSV": "ON"
+        "NEML2_CSV": "ON",
+        "Python3_EXECUTABLE": "/home/colinmoose/miniforge/envs/neml2/bin/python",
+        "Python3_INCLUDE_DIR": "/home/colinmoose/miniforge/envs/neml2/include/python3.13",
+        "Python3_LIBRARY": "/home/colinmoose/miniforge/envs/neml2/lib/libpython3.13.so"
       }
     },
     {

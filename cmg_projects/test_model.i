@@ -4,7 +4,7 @@
         rel_tol = 1e-08
         abs_tol = 1e-10
         max_its = 50
-        verbose = true
+        verbose = false
     []
 []
 
@@ -65,15 +65,11 @@
     [system]
         type = ComposedModel
         models = "eq1 eq2 flow eq5 eq6 eq7 eq8"
+        additional_outputs = 'state/S'
     []
     [model]
         type = ImplicitUpdate
         implicit_model = 'system'
         solver = 'newton'
-    []
-    [prediction]
-        type = ComposedModel
-        models = 'model eq1 eq2'
-        additional_outputs = 'state/S'
     []
 []

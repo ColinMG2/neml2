@@ -21,8 +21,8 @@ protected:
     const Scalar & _k1;
     // const parameter k2
     const Scalar & _k2;
-    // dislocation density
-    const Scalar & _rho_m;
+    // dislocation density (input variable from backward euler integration)
+    const Variable<Scalar> & _rho_m;
     // length of pathway for dislocation, L
     const Scalar & _L;
     // output: dislocation density rate

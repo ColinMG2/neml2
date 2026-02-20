@@ -108,18 +108,18 @@
     []
     [full_yield]
         type = ScalarLinearCombination
-        from_var = 'yield athermal'
-        to_var = 'state/internal/fp'
+        from_var = 'state/internal/fp state/internal/s_a'
+        to_var = 'state/internal/fp_n'
         coefficients = '1 -1'
     []
     [flow]
         type = ComposedModel
-        models = 'vonmises full_yield'
+        models = 'overstress full_yield'
     []
     [normality]
         type = Normality
         model = 'flow'
-        function = 'state/internal/fp'
+        function = 'state/internal/fp_n'
         from = 'state/internal/M state/internal/X'
         to = 'state/internal/NM state/internal/NX'
     []
@@ -145,6 +145,7 @@
         reference_temperature = 'T_train'
         k_B = 1.380649e-23
         activation_energy = 100
+        v_disl = 'state/internal/v_disl'
     []
     [rho_m_rate]
         type = KocksMeckingDislocationDensity
@@ -185,6 +186,10 @@
         coefficient_types = 'YOUNGS_MODULUS POISSONS_RATIO'
         rate_form = true
     []
+    [integrate_rho_m]
+        type = ScalarBackwardEulerTimeIntegration
+        variable = 'state/internal/rho_m'
+    []
     [integrate_stress]
         type = SR2BackwardEulerTimeIntegration
         variable = 'state/S'
@@ -213,6 +218,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'mandel_stress vonmises kinharden athermal yield full_yield flow normality shear v_disl rho_m_rate flow_rate Eprate eprate Erate Eerate elasticity integrate_stress integrate_ep mixed mixed_old rename'
+        models = 'mandel_stress vonmises kinharden athermal yield full_yield flow normality shear v_disl rho_m_rate flow_rate Eprate eprate Erate Eerate elasticity integrate_rho_m integrate_stress integrate_ep mixed mixed_old rename'
     []
 []

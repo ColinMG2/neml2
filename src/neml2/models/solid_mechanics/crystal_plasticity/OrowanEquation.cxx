@@ -8,10 +8,18 @@ OptionSet
 OrowanEquation::expected_options()
 {
     OptionSet options = Model::expected_options();
+    options.doc() = "Computes the plastic flow rate using the Orowan equation:"
+                    "\\f$ \\dot{\\gamma} = \\rho_m b v_{disl} \\f$ where \\f$ \\rho_m \\f$ is the dislocation density, "
+                    "\\f$ b \\f$ is the Burger's vector, \\f$ v_{disl} \\f$ is the dislocation velocity, "
+                    "and \\f$ \\dot{\\gamma} \\f$ is the plastic flow rate.";
     options.set_input("dislocation_density");
+    options.set("dislocation_density").doc() = "Current dislocation density";
     options.set_input("v_disl");
+    options.set("v_disl").doc() = "Dislocation velocity";
     options.set_parameter<TensorName<Scalar>>("b");
+    options.set("b").doc() = "Burgers vector magnitude";
     options.set_output("plastic_flow_rate");
+    options.set("plastic_flow_rate").doc() = "Plastic flow rate";
 
     return options;
 }

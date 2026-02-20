@@ -66,7 +66,7 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
     const auto k_B = _k_B;
     const auto D_H = _D_H;
     const auto T = _T;
-    auto v = (h * L * b) / (pow(a, 2) * Bk) * sign(tau_eff()) * exp(-D_H / (k_B * T) * pow(1 - pow( abs(tau_eff - tau_a)/tau_p ,p), q));
+    auto v = (h * L * b) / (pow(a, 2) * Bk) * abs(tau_eff()) * exp(-D_H / (k_B * T) * (pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q) - T/T_0));
 
     if (out)
     {
@@ -77,20 +77,20 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
     {
         if (tau_eff.is_dependent())
         {
-            _v.d(_tau_eff) = (h * L * b) / (pow(a, 2) * Bk) * tau_eff / sign(tau_eff()) * exp(-D_H / (k_B * T) * pow(1 - pow(abs(tau_eff - tau_a) / tau_p, p) ,q))
-                            - (h * L * b) / (pow(a, 2) * Bk) * sign(tau_eff()) * D_H / (k_B * T) * p * q * pow(tau_p, -p) * pow(abs(tau_eff - tau_a), p-2) * (tau_eff - tau_a)
-                            * exp(-D_H / (k_B * T) * pow(1 - pow(abs(tau_eff - tau_a) / tau_p, p) ,q));
+            _v.d(_tau_eff) = (h * L * b) / (pow(a, 2) * Bk) * tau_eff / abs(tau_eff()) * exp(-D_H / (k_B * T) * (pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q) - T/T_0))
+                            + (h * L * b) / (pow(a, 2) * Bk) * abs(tau_eff()) * D_H / (k_B * T) * q * pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q-1) * pow(tau_p, -p)
+                            * p * pow(abs(tau_eff() - tau_a()), p-2) * (tau_eff() - tau_a()) * exp(-D_H / (k_B * T) * (pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q) - T/T_0));
         }
 
         if (tau_a.is_dependent())
         {
-            _v.d(_tau_a) = -(h * L * b) / (pow(a, 2) * Bk) * sign(tau_eff()) * D_H / (k_B * T) * p * q * pow(tau_p, -p) * pow(abs(tau_eff - tau_a), p-2) * (tau_eff - tau_a)
-                            * exp(-D_H / (k_B * T) * pow(1 - pow(abs(tau_eff - tau_a) / tau_p, p) ,q));
+            _v.d(_tau_a) = (h * L * b) / (pow(a, 2) * Bk) * abs(tau_eff()) * D_H / (k_B * T) * q * pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q-1) * pow(tau_p, -p)
+                            * p * pow(abs(tau_eff() - tau_a()), p-2) * (tau_eff() - tau_a()) * exp(-D_H / (k_B * T) * (pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q) - T/T_0));
         }
 
         if (const auto * const T_0_ptr = nl_param("T_0"))
         {
-            _v.d(*T_0_ptr) = -(h * L * b) / (pow(a, 2) * Bk) * sign(tau_eff()) * D_H / (k_B * T) * T / (T_0 * T_0) * exp(-D_H / (k_B * T) * pow(1 - pow(abs(tau_eff - tau_a) /tau_p ,p) ,q));
+            _v.d(*T_0_ptr) = -(h * L * b) / (pow(a, 2) * Bk) * abs(tau_eff()) * D_H / (k_B * T) * T / pow(T_0, 2) * exp(-D_H / (k_B * T) * (pow(1 - pow( abs(tau_eff() - tau_a())/tau_p ,p), q) - T/T_0));
         }
     }
 }

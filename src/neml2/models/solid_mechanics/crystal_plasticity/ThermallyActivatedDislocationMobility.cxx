@@ -2,8 +2,8 @@
 #include "neml2/tensors/Scalar.h"
 #include "neml2/tensors/functions/pow.h"
 #include "neml2/tensors/functions/exp.h"
-#include "neml2/tensors/functions/abs.h"
-#include "neml2/tensors/functions/sign.h"
+#include "neml2/tensors/functions/macaulay.h"
+#include "neml2/tensors/functions/heaviside.h"
 
 namespace neml2
 {
@@ -34,15 +34,15 @@ ThermallyActivatedDislocationMobility::expected_options()
 ThermallyActivatedDislocationMobility::ThermallyActivatedDislocationMobility(const OptionSet & options) : Model(options),
     _tau_eff(declare_input_variable<Scalar>("effective_shear")),
     _tau_a(declare_input_variable<Scalar>("athermal_shear")),
-    _h(declare_parameter<Scalar>("h", "h")),
-    _L(declare_parameter<Scalar>("L", "L")),
-    _b(declare_parameter<Scalar>("b", "b")),
-    _a(declare_parameter<Scalar>("a", "a")),
-    _Bk(declare_parameter<Scalar>("Bk", "Bk")),
-    _tau_p(declare_parameter<Scalar>("pierls_stress", "pierls_stress")),
-    _T_0(declare_parameter<Scalar>("T_0", "T_0")),
-    _p(declare_parameter<Scalar>("p", "p")),
-    _q(declare_parameter<Scalar>("q", "q")),
+    _h(declare_parameter<Scalar>("h", "h", true)),
+    _L(declare_parameter<Scalar>("L", "L", true)),
+    _b(declare_parameter<Scalar>("b", "b", true)),
+    _a(declare_parameter<Scalar>("a", "a", true)),
+    _Bk(declare_parameter<Scalar>("Bk", "Bk", true)),
+    _tau_p(declare_parameter<Scalar>("pierls_stress", "pierls_stress", true)),
+    _T_0(declare_parameter<Scalar>("T_0", "T_0", true)),
+    _p(declare_parameter<Scalar>("p", "p", true)),
+    _q(declare_parameter<Scalar>("q", "q", true)),
     _T(declare_buffer<Scalar>("T_ref", "reference_temperature")),
     _k_B(declare_buffer<Scalar>("k_B", "k_B")),
     _D_H(declare_buffer<Scalar>("activation_energy", "activation_energy")),
@@ -52,45 +52,27 @@ ThermallyActivatedDislocationMobility::ThermallyActivatedDislocationMobility(con
 void
 ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /*d2out_din2*/)
 {
-    const auto & tau_eff = _tau_eff;
-    const auto & tau_a = _tau_a;
-    const auto h = _h;
-    const auto L = _L;
-    const auto b = _b;
-    const auto a = _a;
-    const auto Bk = _Bk;
-    const auto tau_p = _tau_p;
-    const auto T_0 = _T_0;
-    const auto p = _p;
-    const auto q = _q;
-    const auto k_B = _k_B;
-    const auto D_H = _D_H;
-    const auto T = _T;
-    auto v = (h * L * b) / (pow(a, 2) * Bk) * abs(tau_eff()) * exp(-D_H / (k_B * T) * (pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q) - T/T_0));
-
     if (out)
-    {
-        _v = v;
-    }
+        _v = (_h * _L * _b) / (pow(_a, 2.0) * _Bk) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0));
 
     if (dout_din)
     {
-        if (tau_eff.is_dependent())
+        if (_tau_eff.is_dependent())
         {
-            _v.d(_tau_eff) = (h * L * b) / (pow(a, 2) * Bk) * tau_eff / abs(tau_eff()) * exp(-D_H / (k_B * T) * (pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q) - T/T_0))
-                            + (h * L * b) / (pow(a, 2) * Bk) * abs(tau_eff()) * D_H / (k_B * T) * q * pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q-1) * pow(tau_p, -p)
-                            * p * pow(abs(tau_eff() - tau_a()), p-2) * (tau_eff() - tau_a()) * exp(-D_H / (k_B * T) * (pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q) - T/T_0));
+            _v.d(_tau_eff) = Scalar((_h * _L * _b) / (pow(_a, 2) * _Bk) * heaviside(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0))
+                            + (_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _q * pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q-1) * pow(_tau_p, -_p)
+                            * _p * pow(macaulay(_tau_eff() - _tau_a()), _p-1) * heaviside(_tau_eff() - _tau_a()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
         }
 
-        if (tau_a.is_dependent())
+        if (_tau_a.is_dependent())
         {
-            _v.d(_tau_a) = (h * L * b) / (pow(a, 2) * Bk) * abs(tau_eff()) * D_H / (k_B * T) * q * pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q-1) * pow(tau_p, -p)
-                            * p * pow(abs(tau_eff() - tau_a()), p-2) * (tau_eff() - tau_a()) * exp(-D_H / (k_B * T) * (pow((1 - (pow(abs(tau_eff() - tau_a()) ,p))/pow(tau_p, p)), q) - T/T_0));
+            _v.d(_tau_a) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _q * pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q-1) * pow(_tau_p, -_p)
+                            * _p * pow(macaulay(_tau_eff() - _tau_a()), _p-1) * heaviside(_tau_eff() - _tau_a()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
         }
 
-        if (const auto * const T_0_ptr = nl_param("T_0"))
+        if (const auto * const T_0 = nl_param("T_0"))
         {
-            _v.d(*T_0_ptr) = -(h * L * b) / (pow(a, 2) * Bk) * abs(tau_eff()) * D_H / (k_B * T) * T / pow(T_0, 2) * exp(-D_H / (k_B * T) * (pow(1 - pow( abs(tau_eff() - tau_a())/tau_p ,p), q) - T/T_0));
+            _v.d(*T_0) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _T / pow(_T_0, 2.0) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
         }
     }
 }

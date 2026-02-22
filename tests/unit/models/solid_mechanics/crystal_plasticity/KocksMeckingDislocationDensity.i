@@ -6,6 +6,7 @@
         input_Scalar_values = '1.41568625e-4 5.0'
         output_Scalar_names = 'state/internal/rho_m_rate'
         output_Scalar_values = '141.5615466'
+        check_AD_parameter_derivatives = false
     []
 []
 

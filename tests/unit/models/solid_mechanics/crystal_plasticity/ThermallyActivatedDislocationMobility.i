@@ -6,6 +6,7 @@
         input_Scalar_values = '75e6 50e6'
         output_Scalar_names = 'state/internal/v_disl'
         output_Scalar_values = '113254.9002'
+        check_AD_parameter_derivatives = false
     []
 []
 

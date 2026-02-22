@@ -30,28 +30,23 @@ KocksMeckingDislocationDensity::expected_options()
 }
 KocksMeckingDislocationDensity::KocksMeckingDislocationDensity(const OptionSet & options) : Model(options),
     _gamma_dot(declare_input_variable<Scalar>("plastic_flow_rate")),
-    _k1(declare_parameter<Scalar>("k1", "k1")),
-    _k2(declare_parameter<Scalar>("k2", "k2")),
+    _k1(declare_parameter<Scalar>("k1", "k1", true)),
+    _k2(declare_parameter<Scalar>("k2", "k2", true)),
     _rho_m(declare_input_variable<Scalar>("dislocation_density")),
-    _L(declare_parameter<Scalar>("L", "L")),
+    _L(declare_parameter<Scalar>("L", "L", true)),
     _rho_m_dot(declare_output_variable<Scalar>("density_rate"))
 {
 }
 void
 KocksMeckingDislocationDensity::set_value(bool out, bool dout_din, bool /*d2out_din2*/)
 {
-
-    auto rho_m_dot = (_k1/_L - _k2 * _rho_m()) * _gamma_dot();
-
     if (out)
-    {
-        _rho_m_dot = rho_m_dot;
-    }
+        _rho_m_dot = (_k1/_L - _k2 * _rho_m()) * _gamma_dot();
 
     if (dout_din)
     {
         if (_gamma_dot.is_dependent())
-            _rho_m_dot.d(_gamma_dot) = (_k1/_L - _k2 * _rho_m());
+            _rho_m_dot.d(_gamma_dot) = _k1/_L - _k2 * _rho_m();
         
         if (_rho_m.is_dependent())
             _rho_m_dot.d(_rho_m) = -_k2 * _gamma_dot();
@@ -63,7 +58,7 @@ KocksMeckingDislocationDensity::set_value(bool out, bool dout_din, bool /*d2out_
             _rho_m_dot.d(*k2) = -_rho_m() * _gamma_dot();
         
         if (const auto * const L = nl_param("L"))
-            _rho_m_dot.d(*L) = - _k1 * _gamma_dot() / pow(_L, 2);
+            _rho_m_dot.d(*L) = -(_k1 * _gamma_dot()) / pow(_L, 2.0);
     }
 }
 }

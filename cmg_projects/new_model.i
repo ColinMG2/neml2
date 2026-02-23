@@ -98,8 +98,8 @@
         type = AthermalStress
         shear_modulus = 'G'
         alpha = 0.5
-        b = 1
-        L = 1
+        b = 2.5e-10
+        L = 1.0e-6
         athermal_stress = 'state/internal/s_a'
     []
     [yield]
@@ -114,7 +114,7 @@
     []
     [flow]
         type = ComposedModel
-        models = 'overstress full_yield'
+        models = 'overstress vonmises full_yield'
     []
     [normality]
         type = Normality
@@ -123,50 +123,56 @@
         from = 'state/internal/M state/internal/X'
         to = 'state/internal/NM state/internal/NX'
     []
-    [shear]
+    [shear_eff]
         type = NormalToShearStress
-        normal_stress = 'state/internal/M state/internal/s_a'
-        shear_stress = 'state/internal/tau_eff state/internal/tau_a'
+        normal_stress = 'state/internal/s'
+        shear_stress = 'state/internal/tau_eff'
+        schmid_factor = 0.5
+    []
+    [shear_athermal]
+        type = NormalToShearStress
+        normal_stress = 'state/internal/s_a'
+        shear_stress = 'state/internal/tau_a'
         schmid_factor = 0.5
     []
     [v_disl]
         type = ThermallyActivatedDislocationMobility
         effective_shear = 'state/internal/tau_eff'
         athermal_shear = 'state/internal/tau_a'
-        h = 1
-        L = 1
-        b = 1
-        a = 2
-        Bk = 5
-        pierls_stress = 500
-        T_0 = 600
-        p = 2
-        q = 3
+        h = 1.0e-10
+        L = 1.0e-6
+        b = 2.5e-10
+        a = 5.0e-10
+        Bk = 1.0e-4
+        pierls_stress = 1.0e9
+        T_0 = 300.0
+        p = 0.5
+        q = 1.5
         reference_temperature = 'T_train'
         k_B = 1.380649e-23
-        activation_energy = 100
+        activation_energy = 2.0e-19
         v_disl = 'state/internal/v_disl'
     []
     [rho_m_rate]
         type = KocksMeckingDislocationDensity
         plastic_flow_rate = 'state/internal/gamma_rate'
-        k1 = 2
-        k2 = 2
-        rho_m = 0.5
-        L = 1
+        k1 = 1.0
+        k2 = 10.0
+        dislocation_density = 'state/internal/rho_m'
+        L = 1.0e-6
         density_rate = 'state/internal/rho_m_rate'
     []
     [flow_rate]
         type = OrowanEquation
         dislocation_density = 'state/internal/rho_m'
         v_disl = 'state/internal/v_disl'
-        b = 0.5
+        b = 2.5e-10
         plastic_flow_rate = 'state/internal/gamma_rate'
     []
     [Eprate]
         type = AssociativePlasticFlow
     []
-    [eprate]
+    [Kprate]
         type = AssociativeKinematicPlasticHardening
     []
     [Erate]
@@ -186,17 +192,25 @@
         coefficient_types = 'YOUNGS_MODULUS POISSONS_RATIO'
         rate_form = true
     []
+    [integrate_gamma]
+        type = ScalarBackwardEulerTimeIntegration
+        variable = 'state/internal/gamma'
+    []
     [integrate_rho_m]
         type = ScalarBackwardEulerTimeIntegration
         variable = 'state/internal/rho_m'
+    []
+    [integrate_Kprate]
+        type = SR2BackwardEulerTimeIntegration
+        variable = 'state/internal/Kp'
     []
     [integrate_stress]
         type = SR2BackwardEulerTimeIntegration
         variable = 'state/S'
     []
-    [integrate_ep]
-        type = ScalarBackwardEulerTimeIntegration
-        variable = 'state/internal/ep'
+    [integrate_X]
+        type = SR2BackwardEulerTimeIntegration
+        variable = 'state/internal/X'
     []
     [mixed]
         type = MixedControlSetup
@@ -218,6 +232,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'mandel_stress vonmises kinharden athermal yield full_yield flow normality shear v_disl rho_m_rate flow_rate Eprate eprate Erate Eerate elasticity integrate_rho_m integrate_stress integrate_ep mixed mixed_old rename'
+        models = 'mandel_stress kinharden athermal yield normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_gamma integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
     []
 []

@@ -1,7 +1,7 @@
 [Tensors]
     [T_train]
         type = Scalar
-        values = '399.0 500, 601.0'
+        values = '249.0 400, 551.0'
         batch_shape = '(3)'
         intermediate_dimension = 1
     []
@@ -40,6 +40,48 @@
         values = '550.0 500.0 300.0'
         batch_shape = '(3)'
         intermediate_dimension = 1
+    []
+    [T_0]
+        type = Scalar
+        values = '200.0 320.0 440.0'
+        batch_shape = '(3)'
+        intermediate_dimension = 1
+    []
+    [L]
+        type = Scalar
+        values = '1.0e-6'
+    []
+    [a]
+        type = Scalar
+        values = '3.16e-10'
+    []
+    [b]
+        type = Scalar
+        values = '2.73664028e-10'
+    []
+    [h]
+        type = Scalar
+        values = '2.5801292e-10'
+    []
+    [H_0]
+        type = Scalar
+        values = '1.63'
+    []
+    [kB]
+        type = Scalar
+        values = '8.617e-5'
+    []
+    [p]
+        type = Scalar
+        values = '0.86'
+    []
+    [q]
+        type = Scalar
+        values = '1.69'
+    []
+    [m]
+        type = Scalar
+        values = '0.5'
     []
 []
 
@@ -98,8 +140,8 @@
         type = AthermalStress
         shear_modulus = 'G'
         alpha = 0.5
-        b = 2.5e-10
-        L = 1.0e-6
+        b = 'b'
+        L = 'L'
         athermal_stress = 'state/internal/s_a'
     []
     [yield]
@@ -127,30 +169,30 @@
         type = NormalToShearStress
         normal_stress = 'state/internal/s'
         shear_stress = 'state/internal/tau_eff'
-        schmid_factor = 0.5
+        schmid_factor = 'm'
     []
     [shear_athermal]
         type = NormalToShearStress
         normal_stress = 'state/internal/s_a'
         shear_stress = 'state/internal/tau_a'
-        schmid_factor = 0.5
+        schmid_factor = 'm'
     []
     [v_disl]
         type = ThermallyActivatedDislocationMobility
         effective_shear = 'state/internal/tau_eff'
         athermal_shear = 'state/internal/tau_a'
-        h = 1.0e-10
-        L = 1.0e-6
-        b = 2.5e-10
-        a = 5.0e-10
+        h = 'h'
+        L = 'L'
+        b = 'b'
+        a = 'a'
         Bk = 1.0e-4
-        pierls_stress = 1.0e9
-        T_0 = 300.0
-        p = 0.5
-        q = 1.5
+        pierls_stress = 2.03e3
+        T_0 = 'T_0'
+        p = 'p'
+        q = 'q'
         reference_temperature = 'T_train'
-        k_B = 1.380649e-23
-        activation_energy = 2.0e-19
+        k_B = 'kB'
+        activation_energy = 'H_0'
         v_disl = 'state/internal/v_disl'
     []
     [rho_m_rate]
@@ -159,14 +201,14 @@
         k1 = 1.0
         k2 = 10.0
         dislocation_density = 'state/internal/rho_m'
-        L = 1.0e-6
+        L = 'L'
         density_rate = 'state/internal/rho_m_rate'
     []
     [flow_rate]
         type = OrowanEquation
         dislocation_density = 'state/internal/rho_m'
         v_disl = 'state/internal/v_disl'
-        b = 2.5e-10
+        b = 'b'
         plastic_flow_rate = 'state/internal/gamma_rate'
     []
     [Eprate]
@@ -232,6 +274,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'mandel_stress kinharden athermal yield normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_gamma integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
+        models = 'mandel_stress kinharden overstress vonmises athermal yield normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_gamma integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
     []
 []

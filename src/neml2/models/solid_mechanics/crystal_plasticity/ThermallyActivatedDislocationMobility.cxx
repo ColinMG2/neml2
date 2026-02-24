@@ -4,6 +4,7 @@
 #include "neml2/tensors/functions/exp.h"
 #include "neml2/tensors/functions/macaulay.h"
 #include "neml2/tensors/functions/heaviside.h"
+#include "neml2/tensors/functions/log.h"
 
 namespace neml2
 {
@@ -70,10 +71,37 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
                             * _p * pow(macaulay(_tau_eff() - _tau_a()), _p-1) * heaviside(_tau_eff() - _tau_a()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
         }
 
+        if (const auto * const h = nl_param("h"))
+            _v.d(*h) = Scalar((_L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+
+        if (const auto * const L = nl_param("L"))
+            _v.d(*L) = Scalar((_h * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+        
+        if (const auto * const b = nl_param("b"))
+            _v.d(*b) = Scalar((_h * _L) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+        
+        if (const auto * const a = nl_param("a"))
+            _v.d(*a) = Scalar((-2 * _h * _L * _b) / (pow(_a, 3) * _Bk) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+        
+        if (const auto * const Bk = nl_param("Bk"))
+            _v.d(*Bk) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * pow(_Bk, 2)) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+        
+        if (const auto * const tau_p = nl_param("pierls_stress"))
+            _v.d(*tau_p) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _q * pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q-1)
+            * pow(macaulay(_tau_eff() - _tau_a()) , _p) * _p * pow(_tau_p, -_p-1) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+
         if (const auto * const T_0 = nl_param("T_0"))
-        {
-            _v.d(*T_0) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _T / pow(_T_0, 2.0) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
-        }
+            _v.d(*T_0) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _T / pow(_T_0, 2.0) 
+            * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+
+        if (const auto * const p = nl_param("p"))
+            _v.d(*p) = Scalar((_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _q * pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q-1) 
+            * log((macaulay(_tau_eff() - _tau_a()) / _tau_p)) * pow((macaulay(_tau_eff() - _tau_a()) / _tau_p),_p) 
+            * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+        
+        if (const auto * const q = nl_param("q"))
+            _v.d(*q) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q)
+            * log(1 - pow((macaulay(_tau_eff() - _tau_a()) / _tau_p), _p)) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
     }
 }
 }

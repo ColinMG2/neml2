@@ -1,87 +1,96 @@
 [Tensors]
     [T_train]
         type = Scalar
-        values = '249.0 400, 551.0'
-        batch_shape = '(3)'
+        values = '19.9 516.0 621.0 701.0'
+        batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [C_values]
         type = Scalar
-        values = '100.0 200.0 300.0'
-        batch_shape = '(3)'
+        values = '50.0 100.0 200.0 300.0'
+        batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [g_values]
         type = Scalar
-        values = '5.0 10.0 15.0'
-        batch_shape = '(3)'
+        values = '2.5 5.0 10.0 15.0'
+        batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [sy_values]
         type = Scalar
-        values = '550.0 500.0 300.0'
-        batch_shape = '(3)'
+        values = '600.0 550.0 500.0 300.0'
+        batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [E_values]
         type = Scalar
-        values = '68000.0 72000.0 66000.0'
-        batch_shape = '(3)'
+        values = ' 100000.0 68000.0 72000.0 66000.0'
+        batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [G_values]
         type = Scalar
-        values = '26153.84615 27692.30769 25384.61538'
-        batch_shape = '(3)'
+        values = '200000.0 26153.84615 27692.30769 25384.61538'
+        batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [sy_values]
         type = Scalar
-        values = '550.0 500.0 300.0'
-        batch_shape = '(3)'
+        values = '600.0 550.0 500.0 300.0'
+        batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [T_0]
         type = Scalar
-        values = '200.0 320.0 440.0'
-        batch_shape = '(3)'
+        values = '180.0 200.0 320.0 440.0'
+        batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [L]
         type = Scalar
         values = '1.0e-6'
+        batch_shape = '(1)'
     []
     [a]
         type = Scalar
-        values = '3.16e-10'
+        values = '2.86e-10'
+        batch_shape = '(1)'
     []
     [b]
         type = Scalar
-        values = '2.73664028e-10'
+        values = '2.4783265e-10'
+        batch_shape = '(1)'
     []
     [h]
         type = Scalar
-        values = '2.5801292e-10'
+        values = '2.33518022e-10'
+        batch_shape = '(1)'
     []
     [H_0]
         type = Scalar
         values = '1.63'
+        batch_shape = '(1)'
     []
     [kB]
         type = Scalar
         values = '8.617e-5'
+        batch_shape = '(1)'
     []
     [p]
         type = Scalar
         values = '0.86'
+        batch_shape = '(1)'
     []
     [q]
         type = Scalar
         values = '1.69'
+        batch_shape = '(1)'
     []
     [m]
         type = Scalar
-        values = '0.5'
+        values = '0.3'
+        batch_shape = '(1)'
     []
 []
 

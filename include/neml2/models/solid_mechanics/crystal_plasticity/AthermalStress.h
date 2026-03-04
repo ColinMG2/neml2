@@ -16,7 +16,7 @@ protected:
     void set_value(bool out, bool dout_din, bool d2out_din2) override;
 
     // Input parameters
-    const Variable<Scalar> & _G;
+    const Scalar & _G;
     const Scalar & _alpha;
     const Scalar & _b;
     const Scalar & _L;

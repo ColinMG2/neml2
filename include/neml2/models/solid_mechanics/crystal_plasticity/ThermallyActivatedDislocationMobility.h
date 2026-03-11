@@ -29,11 +29,11 @@ protected:
     const Scalar & _T_0;
     const Scalar & _p;
     const Scalar & _q;
+    const Scalar & _D_H;
 
     // Buffers
     const Scalar & _T;
     const Scalar & _k_B;
-    const Scalar & _D_H;
 
     // Output variable (dislocation velocity)
     Variable<Scalar> & _v;

@@ -5,6 +5,7 @@
 #include "neml2/tensors/functions/macaulay.h"
 #include "neml2/tensors/functions/heaviside.h"
 #include "neml2/tensors/functions/log.h"
+#include "neml2/tensors/functions/clamp.h"
 
 namespace neml2
 {
@@ -26,9 +27,9 @@ ThermallyActivatedDislocationMobility::expected_options()
     options.set_parameter<TensorName<Scalar>>("T_0");
     options.set_parameter<TensorName<Scalar>>("p");
     options.set_parameter<TensorName<Scalar>>("q");
-    options.set_buffer<TensorName<Scalar>>("reference_temperature");
+    options.set_parameter<TensorName<Scalar>>("activation_energy");
+    options.set_parameter<TensorName<Scalar>>("T_ref");
     options.set_buffer<TensorName<Scalar>>("k_B");
-    options.set_buffer<TensorName<Scalar>>("activation_energy");
 
     return options;
 }
@@ -44,64 +45,71 @@ ThermallyActivatedDislocationMobility::ThermallyActivatedDislocationMobility(con
     _T_0(declare_parameter<Scalar>("T_0", "T_0", true)),
     _p(declare_parameter<Scalar>("p", "p", true)),
     _q(declare_parameter<Scalar>("q", "q", true)),
-    _T(declare_buffer<Scalar>("T_ref", "reference_temperature")),
+    _D_H(declare_parameter<Scalar>("activation_energy", "activation_energy", true)),
+    _T(declare_parameter<Scalar>("T_ref", "T_ref", true)),
     _k_B(declare_buffer<Scalar>("k_B", "k_B")),
-    _D_H(declare_buffer<Scalar>("activation_energy", "activation_energy")),
     _v(declare_output_variable<Scalar>("v_disl"))
 {
 }
 void
 ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /*d2out_din2*/)
 {
+    // Precompute common subexpressions
+    const auto prefac       = (_h * _L * _b) / (pow(_a, 2.0) * _Bk);
+    const auto mcl_eff      = macaulay(_tau_eff());
+    const auto mcl_diff     = macaulay(_tau_eff() - _tau_a());
+    const auto inner        = 1.0 - pow(mcl_diff, _p) / pow(_tau_p, _p);
+    const auto exp_val      = exp(-_D_H / (_k_B * _T) * (pow(inner, _q) - _T / _T_0));
+
     if (out)
-        _v = (_h * _L * _b) / (pow(_a, 2.0) * _Bk) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0));
+        _v = prefac * mcl_eff * exp_val;
 
     if (dout_din)
     {
+        // Shared thermal factor in the tau_eff / tau_a Jacobians
+        const auto dexp_core = _D_H / (_k_B * _T) * _q * pow(inner, _q - 1.0)
+                               * pow(_tau_p, -_p) * _p * pow(mcl_diff, _p - 1.0)
+                               * heaviside(_tau_eff() - _tau_a());
+
         if (_tau_eff.is_dependent())
-        {
-            _v.d(_tau_eff) = Scalar((_h * _L * _b) / (pow(_a, 2) * _Bk) * heaviside(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0))
-                            + (_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _q * pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q-1) * pow(_tau_p, -_p)
-                            * _p * pow(macaulay(_tau_eff() - _tau_a()), _p-1) * heaviside(_tau_eff() - _tau_a()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
-        }
+            _v.d(_tau_eff) = prefac * heaviside(_tau_eff()) * exp_val
+                                    + prefac * mcl_eff * dexp_core * exp_val;
 
         if (_tau_a.is_dependent())
-        {
-            _v.d(_tau_a) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _q * pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q-1) * pow(_tau_p, -_p)
-                            * _p * pow(macaulay(_tau_eff() - _tau_a()), _p-1) * heaviside(_tau_eff() - _tau_a()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
-        }
+            _v.d(_tau_a) = -prefac * mcl_eff * dexp_core * exp_val;
 
         if (const auto * const h = nl_param("h"))
-            _v.d(*h) = Scalar((_L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+            _v.d(*h) = (_L * _b) / (pow(_a, 2.0) * _Bk) * mcl_eff * exp_val;
 
         if (const auto * const L = nl_param("L"))
-            _v.d(*L) = Scalar((_h * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
-        
+            _v.d(*L) = (_h * _b) / (pow(_a, 2.0) * _Bk) * mcl_eff * exp_val;
+
         if (const auto * const b = nl_param("b"))
-            _v.d(*b) = Scalar((_h * _L) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
-        
+            _v.d(*b) = (_h * _L) / (pow(_a, 2.0) * _Bk) * mcl_eff * exp_val;
+
         if (const auto * const a = nl_param("a"))
-            _v.d(*a) = Scalar((-2 * _h * _L * _b) / (pow(_a, 3) * _Bk) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
-        
+            _v.d(*a) = (-2.0 * _h * _L * _b) / (pow(_a, 3.0) * _Bk) * mcl_eff * exp_val;
+
         if (const auto * const Bk = nl_param("Bk"))
-            _v.d(*Bk) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * pow(_Bk, 2)) * macaulay(_tau_eff()) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
-        
+            _v.d(*Bk) = -(_h * _L * _b) / (pow(_a, 2.0) * pow(_Bk, 2.0)) * mcl_eff * exp_val;
+
         if (const auto * const tau_p = nl_param("pierls_stress"))
-            _v.d(*tau_p) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _q * pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q-1)
-            * pow(macaulay(_tau_eff() - _tau_a()) , _p) * _p * pow(_tau_p, -_p-1) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+            _v.d(*tau_p) = -prefac * mcl_eff * _D_H / (_k_B * _T)
+                           * _q * pow(inner, _q - 1.0)
+                           * pow(mcl_diff, _p) * _p * pow(_tau_p, -_p - 1.0) * exp_val;
 
         if (const auto * const T_0 = nl_param("T_0"))
-            _v.d(*T_0) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _T / pow(_T_0, 2.0) 
-            * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+            _v.d(*T_0) = -prefac * mcl_eff * _D_H / (_k_B * _T)
+                          * _T / pow(_T_0, 2.0) * exp_val;
 
         if (const auto * const p = nl_param("p"))
-            _v.d(*p) = Scalar((_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * _q * pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q-1) 
-            * log((macaulay(_tau_eff() - _tau_a()) / _tau_p)) * pow((macaulay(_tau_eff() - _tau_a()) / _tau_p),_p) 
-            * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
-        
+            _v.d(*p) = prefac * mcl_eff * _D_H / (_k_B * _T)
+                       * _q * pow(inner, _q - 1.0)
+                       * log(mcl_diff / _tau_p) * pow(mcl_diff / _tau_p, _p) * exp_val;
+
         if (const auto * const q = nl_param("q"))
-            _v.d(*q) = Scalar(-(_h * _L * _b) / (pow(_a, 2) * _Bk) * macaulay(_tau_eff()) * _D_H / (_k_B * _T) * pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q)
-            * log(1 - pow((macaulay(_tau_eff() - _tau_a()) / _tau_p), _p)) * exp(-_D_H / (_k_B * _T) * (pow((1 - (pow(macaulay(_tau_eff() - _tau_a()) ,_p))/pow(_tau_p, _p)), _q) - _T/_T_0)));
+            _v.d(*q) = -prefac * mcl_eff * _D_H / (_k_B * _T)
+                       * pow(inner, _q) * log(inner) * exp_val;
     }
 }
 }

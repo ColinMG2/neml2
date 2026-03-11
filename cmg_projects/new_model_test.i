@@ -1,130 +1,80 @@
 [Tensors]
-    [T_train]
+    [T_ref]
         type = Scalar
-        values = '19.9 516.0 621.0 701.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '873.15'
     []
-    [C_values]
+    [C]
         type = Scalar
-        values = '50.0 100.0 200.0 300.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '200.0'
     []
-    [g_values]
+    [g]
         type = Scalar
-        values = '2.5 5.0 10.0 15.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '10.0'
     []
-    [sy_values]
+    [sy]
         type = Scalar
-        values = '600.0 550.0 500.0 300.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '500.0'
     []
-    [E_values]
+    [E]
         type = Scalar
-        values = ' 100000.0 68000.0 72000.0 66000.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '50000.0'
     []
-    [G_values]
+    [G]
         type = Scalar
-        values = '200000.0 26153.84615 27692.30769 25384.61538'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '19230.76923'
     []
-    [sy_values]
+    [k1]
         type = Scalar
-        values = '600.0 550.0 500.0 300.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '1.0'
+
+    []
+    [k2]
+        type = Scalar
+        values = '10.0'
     []
     [T_0]
         type = Scalar
-        values = '180.0 200.0 320.0 440.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '698.52'
     []
     [L]
         type = Scalar
         values = '1.0e-6'
-        batch_shape = '(1)'
     []
     [a]
         type = Scalar
-        values = '2.86e-10'
-        batch_shape = '(1)'
+        values = '3.16e-10'
     []
     [b]
         type = Scalar
-        values = '2.4783265e-10'
-        batch_shape = '(1)'
+        values = '2.73664028e-10'
     []
     [h]
         type = Scalar
-        values = '2.33518022e-10'
-        batch_shape = '(1)'
+        values = '2.5801292e-10'
     []
     [H_0]
         type = Scalar
         values = '1.63'
-        batch_shape = '(1)'
     []
     [kB]
         type = Scalar
         values = '8.617e-5'
-        batch_shape = '(1)'
     []
     [p]
         type = Scalar
         values = '0.86'
-        batch_shape = '(1)'
     []
     [q]
         type = Scalar
         values = '1.69'
-        batch_shape = '(1)'
     []
     [m]
         type = Scalar
         values = '0.3'
-        batch_shape = '(1)'
     []
 []
 
 [Models]
-    [C]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'C_values'
-    []
-    [g]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'g_values'
-    []
-    [E]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'E_values'
-    []
-    [G]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'G_values'
-    []
-    [sy]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'sy_values'
-    []
     [mandel_stress]
         type = IsotropicMandelStress
     []
@@ -196,10 +146,10 @@
         a = 'a'
         Bk = 1.0e-4
         pierls_stress = 2.03e3
+        T_ref = 'T_ref'
         T_0 = 'T_0'
         p = 'p'
         q = 'q'
-        reference_temperature = 'T_train'
         k_B = 'kB'
         activation_energy = 'H_0'
         v_disl = 'state/internal/v_disl'
@@ -207,8 +157,8 @@
     [rho_m_rate]
         type = KocksMeckingDislocationDensity
         plastic_flow_rate = 'state/internal/gamma_rate'
-        k1 = 1.0
-        k2 = 10.0
+        k1 = 'k1'
+        k2 = 'k2'
         dislocation_density = 'state/internal/rho_m'
         L = 'L'
         density_rate = 'state/internal/rho_m_rate'
@@ -242,10 +192,6 @@
         coefficients = 'E 0.3'
         coefficient_types = 'YOUNGS_MODULUS POISSONS_RATIO'
         rate_form = true
-    []
-    [integrate_gamma]
-        type = ScalarBackwardEulerTimeIntegration
-        variable = 'state/internal/gamma'
     []
     [integrate_rho_m]
         type = ScalarBackwardEulerTimeIntegration
@@ -283,6 +229,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'mandel_stress kinharden overstress vonmises athermal yield normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_gamma integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
+        models = 'mandel_stress kinharden overstress vonmises athermal yield normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
     []
 []

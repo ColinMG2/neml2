@@ -18,7 +18,7 @@ AthermalStress::expected_options()
     return options;
 }
 AthermalStress::AthermalStress(const OptionSet & options) : Model(options),
-    _G(declare_parameter<Scalar>("shear_modulus", "shear_modulus")),
+    _G(declare_parameter<Scalar>("shear_modulus", "shear_modulus", true)),
     _alpha(declare_parameter<Scalar>("alpha", "alpha")),
     _b(declare_parameter<Scalar>("b", "b")),
     _L(declare_parameter<Scalar>("L", "L")),

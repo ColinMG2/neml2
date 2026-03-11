@@ -1,44 +1,44 @@
 [Tensors]
   [T_train]
     type = Scalar
-    values = '499.0 550.0 601.0'
-    batch_shape = '(3)'
+    values = '499.0 550.0 550.0 601.0 601.0'
+    batch_shape = '(5)'
     intermediate_dimension = 1
   []
   [R_values]
     type = Scalar
-    values = '300.0 200.0 100.0'
-    batch_shape = '(3)'
+    values = '300.0 200.0 100.0 75.0 50.0'
+    batch_shape = '(5)'
     intermediate_dimension = 1
   []
   [d_values]
     type = Scalar
-    values = '30.0 20.0 15.0'
-    batch_shape = '(3)'
+    values = '30.0 20.0 15.0 10.0 5.0'
+    batch_shape = '(5)'
     intermediate_dimension = 1
   []
   [sy_values]
     type = Scalar
-    values = '550.0 500.0 300.0'
-    batch_shape = '(3)'
+    values = '0.0 0.0 0.0 0.0 0.0'
+    batch_shape = '(5)'
     intermediate_dimension = 1
   []
   [E_values]
     type = Scalar
-    values = '68000.0 72000.0 66000.0'
-    batch_shape = '(3)'
+    values = '68000.0 72000.0 66000.0 60000.0 55000.0'
+    batch_shape = '(5)'
     intermediate_dimension = 1
   []
   [mu_values]
     type = Scalar
-    values = '300.0 200.0 100.0'
-    batch_shape = '(3)'
+    values = '300.0 200.0 100.0 50.0 25.0'
+    batch_shape = '(5)'
     intermediate_dimension = 1
   []
   [n_values]
     type = Scalar
-    values = '2.0 2.0 2.0'
-    batch_shape = '(3)'
+    values = '1.0 1.0 1.0 1.0 1.0'
+    batch_shape = '(5)'
     intermediate_dimension = 1
   []
 []

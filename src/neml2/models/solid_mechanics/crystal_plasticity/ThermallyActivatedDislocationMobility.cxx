@@ -66,9 +66,16 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
 
     if (dout_din)
     {
+        // Clamp mcl_diff away from zero for derivative terms to avoid
+        // pow(0, p-1) = pow(0, negative) = NaN when p < 1, and log(0) = -Inf.
+        // The heaviside factor zeros out the result when tau_eff <= tau_a,
+        // but IEEE 754 propagates NaN through 0*NaN, so we clamp first.
+        const auto mcl_diff_safe = clamp(mcl_diff, 1.0e-30, 1.0e30);
+        const auto inner_safe    = 1.0 - pow(mcl_diff_safe, _p) / pow(_tau_p, _p);
+
         // Shared thermal factor in the tau_eff / tau_a Jacobians
-        const auto dexp_core = _D_H / (_k_B * _T) * _q * pow(inner, _q - 1.0)
-                               * pow(_tau_p, -_p) * _p * pow(mcl_diff, _p - 1.0)
+        const auto dexp_core = _D_H / (_k_B * _T) * _q * pow(inner_safe, _q - 1.0)
+                               * pow(_tau_p, -_p) * _p * pow(mcl_diff_safe, _p - 1.0)
                                * heaviside(_tau_eff() - _tau_a());
 
         if (_tau_eff.is_dependent())
@@ -95,8 +102,8 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
 
         if (const auto * const tau_p = nl_param("pierls_stress"))
             _v.d(*tau_p) = -prefac * mcl_eff * _D_H / (_k_B * _T)
-                           * _q * pow(inner, _q - 1.0)
-                           * pow(mcl_diff, _p) * _p * pow(_tau_p, -_p - 1.0) * exp_val;
+                           * _q * pow(inner_safe, _q - 1.0)
+                           * pow(mcl_diff_safe, _p) * _p * pow(_tau_p, -_p - 1.0) * exp_val;
 
         if (const auto * const T_0 = nl_param("T_0"))
             _v.d(*T_0) = -prefac * mcl_eff * _D_H / (_k_B * _T)
@@ -104,12 +111,12 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
 
         if (const auto * const p = nl_param("p"))
             _v.d(*p) = prefac * mcl_eff * _D_H / (_k_B * _T)
-                       * _q * pow(inner, _q - 1.0)
-                       * log(mcl_diff / _tau_p) * pow(mcl_diff / _tau_p, _p) * exp_val;
+                       * _q * pow(inner_safe, _q - 1.0)
+                       * log(mcl_diff_safe / _tau_p) * pow(mcl_diff_safe / _tau_p, _p) * exp_val;
 
         if (const auto * const q = nl_param("q"))
             _v.d(*q) = -prefac * mcl_eff * _D_H / (_k_B * _T)
-                       * pow(inner, _q) * log(inner) * exp_val;
+                       * pow(inner_safe, _q) * log(clamp(inner_safe, 1.0e-30, 1.0e30)) * exp_val;
     }
 }
 }

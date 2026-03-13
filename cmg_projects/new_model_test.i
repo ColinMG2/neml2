@@ -1,7 +1,7 @@
 [Tensors]
     [T_ref]
         type = Scalar
-        values = '873.15'
+        values = '2956'
     []
     [C]
         type = Scalar
@@ -26,7 +26,6 @@
     [k1]
         type = Scalar
         values = '1.0'
-
     []
     [k2]
         type = Scalar
@@ -34,7 +33,7 @@
     []
     [T_0]
         type = Scalar
-        values = '698.52'
+        values = '2364.8'
     []
     [L]
         type = Scalar
@@ -100,7 +99,7 @@
         shear_modulus = 'G'
         alpha = 0.5
         b = 'b'
-        L = 'L'
+        dislocation_density = 'state/internal/rho_m'
         athermal_stress = 'state/internal/s_a'
     []
     [yield]

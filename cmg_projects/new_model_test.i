@@ -5,7 +5,7 @@
     []
     [C]
         type = Scalar
-        values = '200.0'
+        values = '5000.0'
     []
     [g]
         type = Scalar
@@ -114,7 +114,7 @@
     []
     [flow]
         type = ComposedModel
-        models = 'overstress vonmises full_yield'
+        models = 'overstress vonmises yield full_yield'
     []
     [normality]
         type = Normality
@@ -228,6 +228,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'mandel_stress kinharden overstress vonmises athermal yield normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
+        models = 'mandel_stress kinharden overstress vonmises athermal normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
     []
 []

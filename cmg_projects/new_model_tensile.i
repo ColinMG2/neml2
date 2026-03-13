@@ -1,19 +1,19 @@
 [Tensors]
     [T_train]
         type = Scalar
-        values = '293.05 789.15 894.15 974.15'
+        values = '292.15 789.15 894.15 974.15'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [C_values]
         type = Scalar
-        values = '50.0 100.0 200.0 300.0'
+        values = '12000.0 8000.0 5000.0 2500.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [g_values]
         type = Scalar
-        values = '2.5 5.0 10.0 15.0'
+        values = '4.0 5.0 6.5 8.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -31,37 +31,49 @@
     []
     [G_values]
         type = Scalar
-        values = '200000.0 26153.84615 27692.30769 25384.61538'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
-    []
-    [sy_values]
-        type = Scalar
-        values = '600.0 550.0 500.0 300.0'
+        values = '38461.53846 26153.84615 27692.30769 25384.61538'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [k1_values]
         type = Scalar
-        values = '1.0 1.0 1.0 1.0'
+        values = '6.0 5.0 4.0 3.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [k2_values]
         type = Scalar
-        values = '10.0 10.0 10.0 10.0'
+        values = '2.0 2.5 3.0 3.5'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [T_0_values]
         type = Scalar
-        values = '1500.0 1500.0 1500.0 1500.0'
+        values = '234.52 631.32 715.32 778.52'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [T_ref_values]
         type = Scalar
         values = '293.15 789.15 894.15 973.15'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [pierls_stress_values]
+        type = Scalar
+        values = '350.0 450.0 550.0 700.0'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [H_0_values]
+        type = Scalar
+        values = '0.50 0.65 0.70 0.85'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [Bk_values]
+        type = Scalar
+        values = '1.0e-4 1.5e-4 2.0e-4 2.5e-4'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -81,21 +93,17 @@
         type = Scalar
         values = '2.33518022e-10'
     []
-    [H_0]
-        type = Scalar
-        values = '0.5'
-    []
     [kB]
         type = Scalar
         values = '8.617e-5'
     []
     [p]
         type = Scalar
-        values = '0.86'
+        values = '0.5'
     []
     [q]
         type = Scalar
-        values = '1.69'
+        values = '1.25'
     []
     [m]
         type = Scalar
@@ -158,6 +166,24 @@
         abscissa = 'T_train'
         ordinate = 'T_ref_values'
     []
+    [tau_p]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'pierls_stress_values'
+    []
+    [H_0]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'H_0_values'
+    []
+    [Bk]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'Bk_values'
+    []
     [mandel_stress]
         type = IsotropicMandelStress
     []
@@ -183,7 +209,7 @@
         shear_modulus = 'G'
         alpha = 0.5
         b = 'b'
-        L = 'L'
+        dislocation_density = 'state/internal/rho_m'
         athermal_stress = 'state/internal/s_a'
     []
     [yield]
@@ -198,7 +224,7 @@
     []
     [flow]
         type = ComposedModel
-        models = 'overstress vonmises full_yield'
+        models = 'overstress vonmises yield full_yield'
     []
     [normality]
         type = Normality
@@ -227,8 +253,8 @@
         L = 'L'
         b = 'b'
         a = 'a'
-        Bk = 1.0e-4
-        pierls_stress = 360
+        Bk = 'Bk'
+        pierls_stress = 'tau_p'
         T_ref = 'T_ref'
         T_0 = 'T_0'
         p = 'p'
@@ -276,10 +302,6 @@
         coefficient_types = 'YOUNGS_MODULUS POISSONS_RATIO'
         rate_form = true
     []
-    [integrate_gamma]
-        type = ScalarBackwardEulerTimeIntegration
-        variable = 'state/internal/gamma'
-    []
     [integrate_rho_m]
         type = ScalarBackwardEulerTimeIntegration
         variable = 'state/internal/rho_m'
@@ -316,6 +338,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'mandel_stress kinharden overstress vonmises athermal yield normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_gamma integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
+        models = 'mandel_stress kinharden overstress vonmises athermal normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_rho_m integrate_Kprate integrate_X integrate_stress mixed mixed_old rename'
     []
 []

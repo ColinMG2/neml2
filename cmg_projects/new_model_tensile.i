@@ -7,13 +7,13 @@
     []
     [C_values]
         type = Scalar
-        values = '12000.0 8000.0 5000.0 2500.0'
+        values = '15000.0 12000.0 9000.0 4500.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [g_values]
         type = Scalar
-        values = '4.0 5.0 6.5 8.0'
+        values = '4.0 3.8 4.2 5.5'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -25,25 +25,25 @@
     []
     [E_values]
         type = Scalar
-        values = ' 100000.0 68000.0 72000.0 66000.0'
+        values = ' 100000.0 75000.0 67000.0 30000.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [G_values]
         type = Scalar
-        values = '38461.53846 26153.84615 27692.30769 25384.61538'
+        values = '38461.53846 28846.15385 25769.23077 11538.46154'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [k1_values]
         type = Scalar
-        values = '6.0 5.0 4.0 3.0'
+        values = '6.5 6.0 5.5 4.5'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [k2_values]
         type = Scalar
-        values = '2.0 2.5 3.0 3.5'
+        values = '2.0 2.0 2.2 2.5'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -61,19 +61,37 @@
     []
     [pierls_stress_values]
         type = Scalar
-        values = '350.0 450.0 550.0 700.0'
+        values = '120.0 100.0 80.0 60.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [H_0_values]
         type = Scalar
-        values = '0.50 0.65 0.70 0.85'
+        values = '0.25 0.22 0.20 0.18'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [Bk_values]
         type = Scalar
-        values = '1.0e-4 1.5e-4 2.0e-4 2.5e-4'
+        values = '5.0e-5 5.0e-5 5.0e-5 5.0e-5'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [p_values]
+        type = Scalar
+        values = '0.5 0.5 0.5 0.5'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [q_values]
+        type = Scalar
+        values = '1.25 1.25 1.25 1.25'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [m_values]
+        type = Scalar
+        values = '0.3 0.3 0.3 0.3'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -96,18 +114,6 @@
     [kB]
         type = Scalar
         values = '8.617e-5'
-    []
-    [p]
-        type = Scalar
-        values = '0.5'
-    []
-    [q]
-        type = Scalar
-        values = '1.25'
-    []
-    [m]
-        type = Scalar
-        values = '0.3'
     []
 []
 
@@ -183,6 +189,24 @@
         argument = 'forces/T'
         abscissa = 'T_train'
         ordinate = 'Bk_values'
+    []
+    [p]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'p_values'
+    []
+    [q]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'q_values'
+    []
+    [m]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'm_values'
     []
     [mandel_stress]
         type = IsotropicMandelStress
@@ -338,6 +362,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'mandel_stress kinharden overstress vonmises athermal normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_rho_m integrate_Kprate integrate_X integrate_stress mixed mixed_old rename'
+        models = 'mandel_stress kinharden overstress vonmises athermal normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
     []
 []

@@ -1,39 +1,99 @@
 [Tensors]
-    [T_ref]
+    [T_train]
         type = Scalar
-        values = '2956'
+        values = '292.15 789.15 894.15 974.15'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
     []
-    [C]
+    [C_values]
         type = Scalar
-        values = '5000.0'
+        values = '12000.0 10000.0 7000.0 2500.0'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
     []
-    [g]
+    [g_values]
         type = Scalar
-        values = '10.0'
+        values = '40.0 40.0 40.0 40.0'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
     []
-    [sy]
+    [sy_values]
         type = Scalar
-        values = '500.0'
+        values = '2000.0 1800.0 1500.0 1200.0'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
     []
-    [E]
+    [E_values]
         type = Scalar
-        values = '50000.0'
+        values = ' 100000.0 75000.0 67000.0 30000.0'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
     []
-    [G]
+    [G_values]
         type = Scalar
-        values = '19230.76923'
+        values = '38461.53846 28846.15385 25769.23077 11538.46154'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
     []
-    [k1]
+    [k1_values]
         type = Scalar
-        values = '1.0'
+        values = '1.0 6.0 5.5 4.5'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
     []
-    [k2]
+    [k2_values]
         type = Scalar
-        values = '10.0'
+        values = '2.0 2.0 2.2 2.5'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
     []
-    [T_0]
+    [T_0_values]
         type = Scalar
-        values = '2364.8'
+        values = '234.52 631.32 715.32 778.52'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [T_ref_values]
+        type = Scalar
+        values = '293.15 789.15 894.15 973.15'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [pierls_stress_values]
+        type = Scalar
+        values = '5.03e3 5.03e3 5.03e3 5.03e3'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [H_0_values]
+        type = Scalar
+        values = '0.25 0.25 0.25 0.25'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [Bk_values]
+        type = Scalar
+        values = '1.0e-4 1.0e-4 1.0e-4 1.0e-4'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [p_values]
+        type = Scalar
+        values = '0.5 0.5 0.5 0.5'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [q_values]
+        type = Scalar
+        values = '1.25 1.25 1.25 1.25'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
+    []
+    [m_values]
+        type = Scalar
+        values = '0.3 0.3 0.3 0.3'
+        batch_shape = '(4)'
+        intermediate_dimension = 1
     []
     [L]
         type = Scalar
@@ -41,39 +101,113 @@
     []
     [a]
         type = Scalar
-        values = '3.16e-10'
+        values = '2.86e-10'
     []
     [b]
         type = Scalar
-        values = '2.73664028e-10'
+        values = '2.4783265e-10'
     []
     [h]
         type = Scalar
-        values = '2.5801292e-10'
-    []
-    [H_0]
-        type = Scalar
-        values = '1.63'
+        values = '2.33518022e-10'
     []
     [kB]
         type = Scalar
         values = '8.617e-5'
     []
-    [p]
-        type = Scalar
-        values = '0.86'
-    []
-    [q]
-        type = Scalar
-        values = '1.69'
-    []
-    [m]
-        type = Scalar
-        values = '0.3'
-    []
 []
 
 [Models]
+    [C]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'C_values'
+    []
+    [g]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'g_values'
+    []
+    [E]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'E_values'
+    []
+    [G]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'G_values'
+    []
+    [sy]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'sy_values'
+    []
+    [k1]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'k1_values'
+    []
+    [k2]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'k2_values'
+    []
+    [T_0]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'T_0_values'
+    []
+    [T_ref]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'T_ref_values'
+    []
+    [tau_p]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'pierls_stress_values'
+    []
+    [H_0]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'H_0_values'
+    []
+    [Bk]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'Bk_values'
+    []
+    [p]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'p_values'
+    []
+    [q]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'q_values'
+    []
+    [m]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'm_values'
+    []
     [mandel_stress]
         type = IsotropicMandelStress
     []
@@ -143,8 +277,8 @@
         L = 'L'
         b = 'b'
         a = 'a'
-        Bk = 1.0e-4
-        pierls_stress = 2.03e3
+        Bk = 'Bk'
+        pierls_stress = 'tau_p'
         T_ref = 'T_ref'
         T_0 = 'T_0'
         p = 'p'

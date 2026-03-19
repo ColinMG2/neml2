@@ -17,9 +17,8 @@ ThermallyActivatedDislocationMobility::expected_options()
     OptionSet options = Model::expected_options();
     options.set_input("effective_shear");
     options.set_input("athermal_shear");
-    options.set_output("v_disl");
+    options.set_input("dislocation_density");
     options.set_parameter<TensorName<Scalar>>("h");
-    options.set_parameter<TensorName<Scalar>>("L");
     options.set_parameter<TensorName<Scalar>>("b");
     options.set_parameter<TensorName<Scalar>>("a");
     options.set_parameter<TensorName<Scalar>>("Bk");
@@ -30,14 +29,15 @@ ThermallyActivatedDislocationMobility::expected_options()
     options.set_parameter<TensorName<Scalar>>("activation_energy");
     options.set_parameter<TensorName<Scalar>>("T_ref");
     options.set_buffer<TensorName<Scalar>>("k_B");
+    options.set_output("v_disl");
 
     return options;
 }
 ThermallyActivatedDislocationMobility::ThermallyActivatedDislocationMobility(const OptionSet & options) : Model(options),
     _tau_eff(declare_input_variable<Scalar>("effective_shear")),
     _tau_a(declare_input_variable<Scalar>("athermal_shear")),
+    _rho_m(declare_input_variable<Scalar>("dislocation_density")),
     _h(declare_parameter<Scalar>("h", "h", true)),
-    _L(declare_parameter<Scalar>("L", "L", true)),
     _b(declare_parameter<Scalar>("b", "b", true)),
     _a(declare_parameter<Scalar>("a", "a", true)),
     _Bk(declare_parameter<Scalar>("Bk", "Bk", true)),
@@ -55,7 +55,8 @@ void
 ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /*d2out_din2*/)
 {
     // Precompute common subexpressions
-    const auto prefac       = (_h * _L * _b) / (pow(_a, 2.0) * _Bk);
+    const auto L_eff        = pow(_rho_m(), -0.5);
+    const auto prefac       = (_h * L_eff * _b) / (pow(_a, 2.0) * _Bk);
     const auto mcl_eff      = macaulay(_tau_eff());
     const auto mcl_diff     = macaulay(_tau_eff() - _tau_a());
     const auto inner        = 1.0 - pow(mcl_diff, _p) / pow(_tau_p, _p);
@@ -85,20 +86,20 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
         if (_tau_a.is_dependent())
             _v.d(_tau_a) = -prefac * mcl_eff * dexp_core * exp_val;
 
+        if (_rho_m.is_dependent())
+            _v.d(_rho_m) = (-0.5 * _h * _b * pow(_rho_m(), -1.5)) / (pow(_a, 2.0) * _Bk) * mcl_eff * exp_val;
+        
         if (const auto * const h = nl_param("h"))
-            _v.d(*h) = (_L * _b) / (pow(_a, 2.0) * _Bk) * mcl_eff * exp_val;
-
-        if (const auto * const L = nl_param("L"))
-            _v.d(*L) = (_h * _b) / (pow(_a, 2.0) * _Bk) * mcl_eff * exp_val;
-
+            _v.d(*h) = (L_eff * _b) / (pow(_a, 2.0) * _Bk) * mcl_eff * exp_val;
+        
         if (const auto * const b = nl_param("b"))
-            _v.d(*b) = (_h * _L) / (pow(_a, 2.0) * _Bk) * mcl_eff * exp_val;
+            _v.d(*b) = (_h * L_eff) / (pow(_a, 2.0) * _Bk) * mcl_eff * exp_val;
 
         if (const auto * const a = nl_param("a"))
-            _v.d(*a) = (-2.0 * _h * _L * _b) / (pow(_a, 3.0) * _Bk) * mcl_eff * exp_val;
+            _v.d(*a) = (-2.0 * _h * L_eff * _b) / (pow(_a, 3.0) * _Bk) * mcl_eff * exp_val;
 
         if (const auto * const Bk = nl_param("Bk"))
-            _v.d(*Bk) = -(_h * _L * _b) / (pow(_a, 2.0) * pow(_Bk, 2.0)) * mcl_eff * exp_val;
+            _v.d(*Bk) = -(_h * L_eff * _b) / (pow(_a, 2.0) * pow(_Bk, 2.0)) * mcl_eff * exp_val;
 
         if (const auto * const tau_p = nl_param("pierls_stress"))
             _v.d(*tau_p) = -prefac * mcl_eff * _D_H / (_k_B * _T)

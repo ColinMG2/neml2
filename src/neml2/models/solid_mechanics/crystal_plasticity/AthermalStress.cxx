@@ -37,7 +37,7 @@ AthermalStress::set_value(bool out, bool dout_din, bool /*d2out_din2*/)
     if (dout_din)
     {   
         if (_rho_m.is_dependent())
-            _sigma_a.d(_rho_m) = 0.5 * _G * _b * pow(_rho_m(), 0.5);
+            _sigma_a.d(_rho_m) = 0.5 * _G * _b * pow(_rho_m(), -0.5);
         
         if (const auto * const G = nl_param("shear_modulus"))
             _sigma_a.d(*G) = (_alpha * _b) / L_eff;

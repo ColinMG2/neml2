@@ -7,13 +7,13 @@
     []
     [C_values]
         type = Scalar
-        values = '12000.0 10000.0 7000.0 2500.0'
+        values = '36750.0 36750.0 36750.0 36750.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [g_values]
         type = Scalar
-        values = '40.0 40.0 40.0 40.0'
+        values = '130.0 130.0 130.0 130.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -37,13 +37,13 @@
     []
     [k1_values]
         type = Scalar
-        values = '1.0 6.0 5.5 4.5'
+        values = '2000.0 2000.0 2000.0 2000.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [k2_values]
         type = Scalar
-        values = '2.0 2.0 2.2 2.5'
+        values = '21.0 21.0 21.0 21.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -61,43 +61,37 @@
     []
     [pierls_stress_values]
         type = Scalar
-        values = '5.03e3 5.03e3 5.03e3 5.03e3'
+        values = '325.0 150.0 80.0 30.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [H_0_values]
         type = Scalar
-        values = '0.25 0.25 0.25 0.25'
+        values = '0.65 0.65 0.65 0.65'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [Bk_values]
         type = Scalar
-        values = '1.0e-4 1.0e-4 1.0e-4 1.0e-4'
+        values = '6.6e-6 6.6e-6 6.6e-6 6.6e-6'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
-    [p_values]
+    [alpha]
         type = Scalar
-        values = '0.5 0.5 0.5 0.5'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '0.6'
     []
-    [q_values]
+    [p]
         type = Scalar
-        values = '1.25 1.25 1.25 1.25'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '0.5'
     []
-    [m_values]
+    [q]
         type = Scalar
-        values = '0.3 0.3 0.3 0.3'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '1.25'
     []
-    [L]
+    [m]
         type = Scalar
-        values = '1.0e-6'
+        values = '0.33'
     []
     [a]
         type = Scalar
@@ -105,11 +99,11 @@
     []
     [b]
         type = Scalar
-        values = '2.4783265e-10'
+        values = '2.484e-10'
     []
     [h]
         type = Scalar
-        values = '2.33518022e-10'
+        values = '2.34193766e-10'
     []
     [kB]
         type = Scalar
@@ -190,24 +184,6 @@
         abscissa = 'T_train'
         ordinate = 'Bk_values'
     []
-    [p]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'p_values'
-    []
-    [q]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'q_values'
-    []
-    [m]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'm_values'
-    []
     [mandel_stress]
         type = IsotropicMandelStress
     []
@@ -231,7 +207,7 @@
     [athermal]
         type = AthermalStress
         shear_modulus = 'G'
-        alpha = 0.5
+        alpha = 'alpha'
         b = 'b'
         dislocation_density = 'state/internal/rho_m'
         athermal_stress = 'state/internal/s_a'
@@ -273,8 +249,8 @@
         type = ThermallyActivatedDislocationMobility
         effective_shear = 'state/internal/tau_eff'
         athermal_shear = 'state/internal/tau_a'
+        dislocation_density = 'state/internal/rho_m'
         h = 'h'
-        L = 'L'
         b = 'b'
         a = 'a'
         Bk = 'Bk'
@@ -293,7 +269,6 @@
         k1 = 'k1'
         k2 = 'k2'
         dislocation_density = 'state/internal/rho_m'
-        L = 'L'
         density_rate = 'state/internal/rho_m_rate'
     []
     [flow_rate]

@@ -18,10 +18,10 @@ protected:
     // Input variables (effective shear and athermal shear)
     const Variable<Scalar> & _tau_eff;
     const Variable<Scalar> & _tau_a;
+    const Variable<Scalar> & _rho_m;
 
     // Parameters for training
     const Scalar & _h;
-    const Scalar & _L;
     const Scalar & _b;
     const Scalar & _a;
     const Scalar & _Bk;

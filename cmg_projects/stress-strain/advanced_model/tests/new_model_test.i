@@ -1,25 +1,25 @@
 [Tensors]
     [T_train]
         type = Scalar
-        values = '292.15 789.15 894.15 974.15'
+        values = '572.15 573.15 573.15 754.15'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [C_values]
         type = Scalar
-        values = '36750.0 36750.0 36750.0 36750.0'
+        values = '41500.0 41500.0 41500.0 41500.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [g_values]
         type = Scalar
-        values = '130.0 130.0 130.0 130.0'
+        values = '350.0 350.0 350.0 350.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [sy_values]
         type = Scalar
-        values = '2000.0 1800.0 1500.0 1200.0'
+        values = '400.0 400.0 400.0 300.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -37,57 +37,57 @@
     []
     [k1_values]
         type = Scalar
-        values = '2000.0 2000.0 2000.0 2000.0'
+        values = '8.3e5 8.3e5 8.3e5 8.3e5'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [k2_values]
         type = Scalar
-        values = '21.0 21.0 21.0 21.0'
+        values = '150.0 150.0 150.0 150.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [T_0_values]
         type = Scalar
-        values = '234.52 631.32 715.32 778.52'
+        values = '2956.0 2956.0 2956.0 2956.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [T_ref_values]
         type = Scalar
-        values = '293.15 789.15 894.15 973.15'
+        values = '573.15 573.15 573.15 753.15'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [pierls_stress_values]
         type = Scalar
-        values = '325.0 150.0 80.0 30.0'
+        values = '2.03e3 2.03e3 2.03e3 2.03e3'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [H_0_values]
         type = Scalar
-        values = '0.65 0.65 0.65 0.65'
+        values = '1.63 1.63 1.63 1.63'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [Bk_values]
         type = Scalar
-        values = '6.6e-6 6.6e-6 6.6e-6 6.6e-6'
+        values = '8.3e-6 8.3e-6 8.3e-6 8.3e-6'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [alpha]
         type = Scalar
-        values = '0.6'
+        values = '0.5'
     []
     [p]
         type = Scalar
-        values = '0.5'
+        values = '0.86'
     []
     [q]
         type = Scalar
-        values = '1.25'
+        values = '1.69'
     []
     [m]
         type = Scalar
@@ -95,15 +95,15 @@
     []
     [a]
         type = Scalar
-        values = '2.86e-10'
+        values = '3.16e-7'
     []
     [b]
         type = Scalar
-        values = '2.484e-10'
+        values = '2.73664028e-7'
     []
     [h]
         type = Scalar
-        values = '2.34193766e-10'
+        values = '2.5801292e-7'
     []
     [kB]
         type = Scalar

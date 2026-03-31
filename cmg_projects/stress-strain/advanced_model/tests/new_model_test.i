@@ -1,7 +1,7 @@
 [Tensors]
     [T_train]
         type = Scalar
-        values = '572.15 573.15 573.15 754.15'
+        values = '522.15 673.15 753.15 824.15'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -37,13 +37,13 @@
     []
     [k1_values]
         type = Scalar
-        values = '8.3e5 8.3e5 8.3e5 8.3e5'
+        values = '8.3e4 8.3e4 8.3e4 8.3e4'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
     [k2_values]
         type = Scalar
-        values = '150.0 150.0 150.0 150.0'
+        values = '40.0 40.0 40.0 40.0'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -55,7 +55,7 @@
     []
     [T_ref_values]
         type = Scalar
-        values = '573.15 573.15 573.15 753.15'
+        values = '523.15 673.15 753.15 823.15'
         batch_shape = '(4)'
         intermediate_dimension = 1
     []
@@ -91,7 +91,7 @@
     []
     [m]
         type = Scalar
-        values = '0.33'
+        values = '0.333'
     []
     [a]
         type = Scalar

@@ -3,7 +3,6 @@
 
 namespace neml2
 {
-class SR2;
 class Scalar;
 class NormalToShearStress : public Model
 {

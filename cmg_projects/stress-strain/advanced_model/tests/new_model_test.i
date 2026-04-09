@@ -1,34 +1,22 @@
 [Tensors]
-    [T_train] # Kelvin
-        type = Scalar
-        values = '522.15 523.15 673.15 673.15 673.15 753.15 823.15 823.15 824.15'
-        batch_shape = '(9)'
-        intermediate_dimension = 1
-    []
-    [T_ref_values] # K
-        type = Scalar
-        values = '523.15 523.15 673.15 673.15 673.15 753.15 823.15 823.15 823.15'
-        batch_shape = '(9)'
-        intermediate_dimension = 1
-    []
     [C] # MPa
         type = Scalar
-        values = '41500.0'
+        values = '14.5e3'
         batch_shape = '(1)'
     []
     [g] # unitless
         type = Scalar
-        values = '350.0'
+        values = '300.0'
         batch_shape = '(1)'
     []
-    [k1] # mm^-1
+    [k1] # m^-1
         type = Scalar
-        values = '8.3e5'
+        values = '8.3e7'
         batch_shape = '(1)'
     []
     [k2] # unitless
         type = Scalar
-        values = '150.0'
+        values = '40.0'
         batch_shape = '(1)'
     []
     [T_0] # K
@@ -48,7 +36,7 @@
     []
     [Bk] # MPa * s
         type = Scalar
-        values = '8.3e-6'
+        values = '4.15e-8'
         batch_shape = '(1)'
     []
     [alpha]
@@ -67,17 +55,17 @@
         type = Scalar
         values = '0.333'
     []
-    [a] # mm
+    [a] # m
         type = Scalar
-        values = '3.16e-7'
+        values = '3.16e-10'
     []
-    [b] # mm
+    [b] # m
         type = Scalar
-        values = '2.73664028e-7'
+        values = '2.73664028e-10'
     []
-    [h] # mm
+    [h] # m
         type = Scalar
-        values = '2.5801292e-7'
+        values = '2.5801292e-10'
     []
     [kB] # eV/K
         type = Scalar
@@ -86,24 +74,12 @@
 []
 
 [Models]
-    [T_ref]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'T_ref_values'
-    []
-    [T_C]
-        type = ScalarLinearCombination
-        from_var = 'forces/T'
-        to_var = 'forces/T_C'
-        constant_coefficient = '-273.15'
-    []
     [E]
         type = ScalarQuadraticInterpolation
         a = '-2.716e-2'
         b = '0.01253e3'
         c = '396507'
-        argument = 'forces/T_C'
+        argument = 'forces/T'
         output = 'E'
     []
     [nu]
@@ -111,7 +87,7 @@
         a = '3.157e-9'
         b = '-8.030e-6'
         c = '0.285'
-        argument = 'forces/T_C'
+        argument = 'forces/T'
         output = 'nu'
     []
     [G_bottom_inner]
@@ -198,12 +174,12 @@
         effective_shear = 'state/internal/tau_eff'
         athermal_shear = 'state/internal/tau_a'
         dislocation_density = 'state/internal/rho_m'
+        temperature = 'forces/T'
         h = 'h'
         b = 'b'
         a = 'a'
         Bk = 'Bk'
         pierls_stress = 'tau_p'
-        T_ref = 'T_ref'
         T_0 = 'T_0'
         p = 'p'
         q = 'q'
@@ -285,6 +261,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'T_ref T_C G_bottom G_bottom_inner G mandel_stress kinharden overstress vonmises athermal normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
+        models = 'G_bottom G_bottom_inner G mandel_stress kinharden overstress vonmises athermal normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
     []
 []

@@ -19,21 +19,19 @@ protected:
     const Variable<Scalar> & _tau_eff;
     const Variable<Scalar> & _tau_a;
     const Variable<Scalar> & _rho_m;
+    const Variable<Scalar> & _T;
 
-    // Parameters for training
-    const Scalar & _h;
-    const Scalar & _b;
-    const Scalar & _a;
-    const Scalar & _Bk;
-    const Scalar & _tau_p;
-    const Scalar & _T_0;
-    const Scalar & _p;
-    const Scalar & _q;
-    const Scalar & _D_H;
-
-    // Buffers
-    const Scalar & _T;
-    const Scalar & _k_B;
+    // Variables from equation
+    const Scalar & _h;      // buffer
+    const Scalar & _b;      // biffer
+    const Scalar & _a;      // buffer
+    const Scalar & _Bk;     // parameter
+    const Scalar & _tau_p;  // parameter
+    const Scalar & _T_0;    // parameter
+    const Scalar & _p;      // parameter
+    const Scalar & _q;      // parameter
+    const Scalar & _D_H;    // parameter
+    const Scalar & _k_B;    // buffer
 
     // Output variable (dislocation velocity)
     Variable<Scalar> & _v;

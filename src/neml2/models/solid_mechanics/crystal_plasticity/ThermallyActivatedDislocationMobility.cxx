@@ -18,6 +18,7 @@ ThermallyActivatedDislocationMobility::expected_options()
     options.set_input("effective_shear");
     options.set_input("athermal_shear");
     options.set_input("dislocation_density");
+    options.set_input("temperature");
     options.set_parameter<TensorName<Scalar>>("h");
     options.set_parameter<TensorName<Scalar>>("b");
     options.set_parameter<TensorName<Scalar>>("a");
@@ -27,7 +28,6 @@ ThermallyActivatedDislocationMobility::expected_options()
     options.set_parameter<TensorName<Scalar>>("p");
     options.set_parameter<TensorName<Scalar>>("q");
     options.set_parameter<TensorName<Scalar>>("activation_energy");
-    options.set_parameter<TensorName<Scalar>>("T_ref");
     options.set_buffer<TensorName<Scalar>>("k_B");
     options.set_output("v_disl");
 
@@ -37,6 +37,7 @@ ThermallyActivatedDislocationMobility::ThermallyActivatedDislocationMobility(con
     _tau_eff(declare_input_variable<Scalar>("effective_shear")),
     _tau_a(declare_input_variable<Scalar>("athermal_shear")),
     _rho_m(declare_input_variable<Scalar>("dislocation_density")),
+    _T(declare_input_variable<Scalar>("temperature")),
     _h(declare_parameter<Scalar>("h", "h", true)),
     _b(declare_parameter<Scalar>("b", "b", true)),
     _a(declare_parameter<Scalar>("a", "a", true)),
@@ -46,7 +47,6 @@ ThermallyActivatedDislocationMobility::ThermallyActivatedDislocationMobility(con
     _p(declare_parameter<Scalar>("p", "p", true)),
     _q(declare_parameter<Scalar>("q", "q", true)),
     _D_H(declare_parameter<Scalar>("activation_energy", "activation_energy", true)),
-    _T(declare_parameter<Scalar>("T_ref", "T_ref", true)),
     _k_B(declare_buffer<Scalar>("k_B", "k_B")),
     _v(declare_output_variable<Scalar>("v_disl"))
 {
@@ -60,7 +60,7 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
     const auto mcl_eff      = macaulay(_tau_eff());
     const auto mcl_diff     = macaulay(_tau_eff() - _tau_a());
     const auto inner        = 1.0 - pow(mcl_diff, _p) / pow(_tau_p, _p);
-    const auto exp_val      = exp(-_D_H / (_k_B * _T) * (pow(inner, _q) - _T / _T_0));
+    const auto exp_val      = exp(-_D_H / (_k_B * _T()) * (pow(inner, _q) - _T() / _T_0));
 
     if (out)
         _v = prefac * mcl_eff * exp_val;
@@ -75,7 +75,7 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
         const auto inner_safe    = 1.0 - pow(mcl_diff_safe, _p) / pow(_tau_p, _p);
 
         // Shared thermal factor in the tau_eff / tau_a Jacobians
-        const auto dexp_core = _D_H / (_k_B * _T) * _q * pow(inner_safe, _q - 1.0)
+        const auto dexp_core = _D_H / (_k_B * _T()) * _q * pow(inner_safe, _q - 1.0)
                                * pow(_tau_p, -_p) * _p * pow(mcl_diff_safe, _p - 1.0)
                                * heaviside(_tau_eff() - _tau_a());
 
@@ -102,21 +102,21 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
             _v.d(*Bk) = -(_h * L_eff * _b) / (pow(_a, 2.0) * pow(_Bk, 2.0)) * mcl_eff * exp_val;
 
         if (const auto * const tau_p = nl_param("pierls_stress"))
-            _v.d(*tau_p) = -prefac * mcl_eff * _D_H / (_k_B * _T)
+            _v.d(*tau_p) = -prefac * mcl_eff * _D_H / (_k_B * _T())
                            * _q * pow(inner_safe, _q - 1.0)
                            * pow(mcl_diff_safe, _p) * _p * pow(_tau_p, -_p - 1.0) * exp_val;
 
         if (const auto * const T_0 = nl_param("T_0"))
-            _v.d(*T_0) = -prefac * mcl_eff * _D_H / (_k_B * _T)
-                          * _T / pow(_T_0, 2.0) * exp_val;
+            _v.d(*T_0) = -prefac * mcl_eff * _D_H / (_k_B * _T())
+                          * _T() / pow(_T_0, 2.0) * exp_val;
 
         if (const auto * const p = nl_param("p"))
-            _v.d(*p) = prefac * mcl_eff * _D_H / (_k_B * _T)
+            _v.d(*p) = prefac * mcl_eff * _D_H / (_k_B * _T())
                        * _q * pow(inner_safe, _q - 1.0)
                        * log(mcl_diff_safe / _tau_p) * pow(mcl_diff_safe / _tau_p, _p) * exp_val;
 
         if (const auto * const q = nl_param("q"))
-            _v.d(*q) = -prefac * mcl_eff * _D_H / (_k_B * _T)
+            _v.d(*q) = -prefac * mcl_eff * _D_H / (_k_B * _T())
                        * pow(inner_safe, _q) * log(clamp(inner_safe, 1.0e-30, 1.0e30)) * exp_val;
     }
 }

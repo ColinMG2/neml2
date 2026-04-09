@@ -20,22 +20,3 @@
         argument = 'forces/T'
     []
 []
-
-[Tensors]
-  [T]
-    type = LinspaceScalar
-    start = 273.15
-    end = 2000
-    nstep = 100
-    dim = 0
-    group = 'intermediate'
-  []
-  [E]
-    type = LinspaceScalar
-    start = 1.9e5
-    end = 1.2e5
-    nstep = 100
-    dim = 0
-    group = 'intermediate'
-  []
-[]

@@ -9,9 +9,9 @@
         values = '300.0'
         batch_shape = '(1)'
     []
-    [k1] # m^-1
+    [k1] # microns^-1
         type = Scalar
-        values = '8.3e7'
+        values = '8.3e1'
         batch_shape = '(1)'
     []
     [k2] # unitless
@@ -24,20 +24,23 @@
         values = '2956.0'
         batch_shape = '(1)'
     []
-    [tau_p] # MPa
-        type = Scalar
-        values = '2.03e3'
-        batch_shape = '(1)'
-    []
-    [H_0] # eV
-        type = Scalar
-        values = '1.63'
-        batch_shape = '(1)'
-    []
     [Bk] # MPa * s
         type = Scalar
         values = '4.15e-8'
         batch_shape = '(1)'
+    []
+    [S]
+        type = Scalar
+        values = '10.0'
+        batch_shape = '(1)'
+    []
+    [tau_p] # MPa
+        type = Scalar
+        values = '2.03e3'
+    []
+    [H_0] # eV
+        type = Scalar
+        values = '1.55'
     []
     [alpha]
         type = Scalar
@@ -49,23 +52,23 @@
     []
     [q]
         type = Scalar
-        values = '1.69'
+        values = '1.25'
     []
     [m]
         type = Scalar
         values = '0.333'
     []
-    [a] # m
+    [a] # microns
         type = Scalar
-        values = '3.16e-10'
+        values = '3.16e-4'
     []
-    [b] # m
+    [b] # microns
         type = Scalar
-        values = '2.73664028e-10'
+        values = '2.73664028e-4'
     []
-    [h] # m
+    [h] # microns
         type = Scalar
-        values = '2.5801292e-10'
+        values = '2.5801292e-4'
     []
     [kB] # eV/K
         type = Scalar
@@ -154,8 +157,8 @@
         type = Normality
         model = 'flow'
         function = 'state/internal/fp_n'
-        from = 'state/internal/M state/internal/X'
-        to = 'state/internal/NM state/internal/NX'
+        from = 'state/internal/M'
+        to = 'state/internal/NM'
     []
     [shear_eff]
         type = NormalToShearStress
@@ -163,28 +166,23 @@
         shear_stress = 'state/internal/tau_eff'
         schmid_factor = 'm'
     []
-    [shear_athermal]
-        type = NormalToShearStress
-        normal_stress = 'state/internal/s_a'
-        shear_stress = 'state/internal/tau_a'
-        schmid_factor = 'm'
-    []
     [v_disl]
         type = ThermallyActivatedDislocationMobility
         effective_shear = 'state/internal/tau_eff'
-        athermal_shear = 'state/internal/tau_a'
+        athermal_shear = 'state/internal/s_a'
         dislocation_density = 'state/internal/rho_m'
         temperature = 'forces/T'
         h = 'h'
         b = 'b'
         a = 'a'
         Bk = 'Bk'
-        pierls_stress = 'tau_p'
+        tau_p = 'tau_p'
         T_0 = 'T_0'
         p = 'p'
         q = 'q'
         k_B = 'kB'
-        activation_energy = 'H_0'
+        s = 'S'
+        H_0 = 'H_0'
         v_disl = 'state/internal/v_disl'
     []
     [rho_m_rate]
@@ -204,9 +202,6 @@
     []
     [Eprate]
         type = AssociativePlasticFlow
-    []
-    [Kprate]
-        type = AssociativeKinematicPlasticHardening
     []
     [Erate]
         type = SR2VariableRate
@@ -228,10 +223,6 @@
     [integrate_rho_m]
         type = ScalarBackwardEulerTimeIntegration
         variable = 'state/internal/rho_m'
-    []
-    [integrate_Kprate]
-        type = SR2BackwardEulerTimeIntegration
-        variable = 'state/internal/Kp'
     []
     [integrate_stress]
         type = SR2BackwardEulerTimeIntegration
@@ -261,6 +252,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'G_bottom G_bottom_inner G mandel_stress kinharden overstress vonmises athermal normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
+        models = 'G_bottom G_bottom_inner mandel_stress kinharden overstress vonmises athermal normality shear_eff v_disl rho_m_rate flow_rate Eprate Erate Eerate elasticity integrate_rho_m integrate_stress integrate_X mixed mixed_old rename'
     []
 []

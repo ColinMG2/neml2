@@ -32,6 +32,7 @@ protected:
     const Scalar & _q;      // parameter
     const Scalar & _D_H;    // parameter
     const Scalar & _k_B;    // buffer
+    const Scalar & _s;      // parameter
 
     // Output variable (dislocation velocity)
     Variable<Scalar> & _v;

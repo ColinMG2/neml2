@@ -1,200 +1,115 @@
 [Tensors]
-    [T_train]
+    [C] # MPa
         type = Scalar
-        values = '292.15 789.15 894.15 974.15'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '5.0e3'
+        batch_shape = '(1)'
     []
-    [C_values]
+    [g] # unitless
         type = Scalar
-        values = '46600.0 27000.0 21750.0 4300.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '30.0'
+        batch_shape = '(1)'
     []
-    [g_values]
+    [k1] # microns^-1
         type = Scalar
-        values = '50.0 50.0 50.0 50.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '5.0'
+        batch_shape = '(1)'
     []
-    [sy_values]
+    [k2] # unitless
         type = Scalar
-        values = '600.0 550.0 500.0 300.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '3.5'
+        batch_shape = '(1)'
     []
-    [E_values]
+    [T_0] # K
         type = Scalar
-        values = ' 100000.0 75000.0 67000.0 30000.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '249.9387'
+        batch_shape = '(1)'
     []
-    [G_values]
+    [Bk] # MPa * s
         type = Scalar
-        values = '38461.53846 28846.15385 25769.23077 11538.46154'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '6.6e-6'
+        batch_shape = '(1)'
     []
-    [k1_values]
+    [S]
         type = Scalar
-        values = '1.0e8 1.0e8 1.0e8 1.0e8'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '30.0'
+        batch_shape = '(1)'
     []
-    [k2_values]
+    [tau_p] # MPa
         type = Scalar
-        values = '21.0 21.0 21.0 21.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '360'
     []
-    [T_0_values]
+    [H_0] # eV
         type = Scalar
-        values = '234.52 631.32 715.32 778.52'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '0.65'
     []
-    [T_ref_values]
+    [alpha]
         type = Scalar
-        values = '293.15 789.15 894.15 973.15'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '0.5'
     []
-    [pierls_stress_values]
+    [p]
         type = Scalar
-        values = '325.0 150.0 80.0 30.0'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '0.5'
     []
-    [H_0_values]
+    [q]
         type = Scalar
-        values = '0.5 0.5 0.5 0.5'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
-    []
-    [Bk_values]
-        type = Scalar
-        values = '1.0e-4 1.0e-4 1.0e-4 1.0e-4'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
-    []
-    [p_values]
-        type = Scalar
-        values = '0.5 0.5 0.5 0.5'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
-    []
-    [q_values]
-        type = Scalar
-        values = '1.25 1.25 1.25 1.25'
-        batch_shape = '(4)'
-        intermediate_dimension = 1
+        values = '1.25'
     []
     [m]
         type = Scalar
-        values = '0.33'
+        values = '0.333'
     []
-    [a]
+    [a] # microns
         type = Scalar
-        values = '2.86e-10'
+        values = '2.868e-4'
     []
-    [b]
+    [b] # microns
         type = Scalar
-        values = '2.484e-10'
+        values = '2.483760858e-4'
     []
-    [h]
+    [h] # microns
         type = Scalar
-        values = '2.34193766e-10'
+        values = '2.703976331e-4'
     []
-    [kB]
+    [kB] # eV/K
         type = Scalar
         values = '8.617e-5'
     []
 []
 
 [Models]
-    [C]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'C_values'
-    []
-    [g]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'g_values'
-    []
     [E]
-        type = ScalarLinearInterpolation
+        type = ScalarQuadraticInterpolation
+        a = '-7.626e-2'
+        b = '0.01879e3'
+        c = '207968'
         argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'E_values'
+        output = 'E'
+    []
+    [nu]
+        type = ScalarQuadraticInterpolation
+        a = '1.609e-9'
+        b = '-4.449e-5'
+        c = '0.302'
+        argument = 'forces/T'
+        output = 'nu'
+    []
+    [G_bottom_inner]
+        type = ScalarLinearCombination
+        from_var = 'nu'
+        to_var = 'G_bottom_inner'
+        constant_coefficient = '1'
+    []
+    [G_bottom]
+        type = ScalarMultiplication
+        from_var = 'G_bottom_inner'
+        to_var = 'G_bottom'
+        coefficient = '2'
     []
     [G]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'G_values'
-    []
-    [sy]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'sy_values'
-    []
-    [k1]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'k1_values'
-    []
-    [k2]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'k2_values'
-    []
-    [T_0]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'T_0_values'
-    []
-    [T_ref]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'T_ref_values'
-    []
-    [tau_p]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'pierls_stress_values'
-    []
-    [H_0]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'H_0_values'
-    []
-    [Bk]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'Bk_values'
-    []
-    [p]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'p_values'
-    []
-    [q]
-        type = ScalarLinearInterpolation
-        argument = 'forces/T'
-        abscissa = 'T_train'
-        ordinate = 'q_values'
+        type = ScalarMultiplication
+        from_var = 'E G_bottom'
+        to_var = 'G'
+        reciprocal = 'false true'
     []
     [mandel_stress]
         type = IsotropicMandelStress
@@ -219,14 +134,14 @@
     [athermal]
         type = AthermalStress
         shear_modulus = 'G'
-        alpha = 0.6
+        alpha = 'alpha'
         b = 'b'
         dislocation_density = 'state/internal/rho_m'
         athermal_stress = 'state/internal/s_a'
     []
     [yield]
         type = YieldFunction
-        yield_stress = 'sy'
+        yield_stress = '0.0'
     []
     [full_yield]
         type = ScalarLinearCombination
@@ -242,8 +157,8 @@
         type = Normality
         model = 'flow'
         function = 'state/internal/fp_n'
-        from = 'state/internal/M state/internal/X'
-        to = 'state/internal/NM state/internal/NX'
+        from = 'state/internal/M'
+        to = 'state/internal/NM'
     []
     [shear_eff]
         type = NormalToShearStress
@@ -251,28 +166,23 @@
         shear_stress = 'state/internal/tau_eff'
         schmid_factor = 'm'
     []
-    [shear_athermal]
-        type = NormalToShearStress
-        normal_stress = 'state/internal/s_a'
-        shear_stress = 'state/internal/tau_a'
-        schmid_factor = 'm'
-    []
     [v_disl]
         type = ThermallyActivatedDislocationMobility
         effective_shear = 'state/internal/tau_eff'
-        athermal_shear = 'state/internal/tau_a'
+        athermal_shear = 'state/internal/s_a'
         dislocation_density = 'state/internal/rho_m'
+        temperature = 'forces/T'
         h = 'h'
         b = 'b'
         a = 'a'
         Bk = 'Bk'
-        pierls_stress = 'tau_p'
-        T_ref = 'T_ref'
+        tau_p = 'tau_p'
         T_0 = 'T_0'
         p = 'p'
         q = 'q'
         k_B = 'kB'
-        activation_energy = 'H_0'
+        s = 'S'
+        H_0 = 'H_0'
         v_disl = 'state/internal/v_disl'
     []
     [rho_m_rate]
@@ -293,9 +203,6 @@
     [Eprate]
         type = AssociativePlasticFlow
     []
-    [Kprate]
-        type = AssociativeKinematicPlasticHardening
-    []
     [Erate]
         type = SR2VariableRate
         variable = 'forces/E'
@@ -309,17 +216,13 @@
     []
     [elasticity]
         type = LinearIsotropicElasticity
-        coefficients = 'E 0.3'
+        coefficients = 'E nu'
         coefficient_types = 'YOUNGS_MODULUS POISSONS_RATIO'
         rate_form = true
     []
     [integrate_rho_m]
         type = ScalarBackwardEulerTimeIntegration
         variable = 'state/internal/rho_m'
-    []
-    [integrate_Kprate]
-        type = SR2BackwardEulerTimeIntegration
-        variable = 'state/internal/Kp'
     []
     [integrate_stress]
         type = SR2BackwardEulerTimeIntegration
@@ -349,6 +252,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'mandel_stress kinharden overstress vonmises athermal normality shear_eff shear_athermal v_disl rho_m_rate flow_rate Eprate Kprate Erate Eerate elasticity integrate_rho_m integrate_Kprate integrate_stress integrate_X mixed mixed_old rename'
+        models = 'G_bottom G_bottom_inner mandel_stress kinharden overstress vonmises athermal normality shear_eff v_disl rho_m_rate flow_rate Eprate Erate Eerate elasticity integrate_rho_m integrate_stress integrate_X mixed mixed_old rename'
     []
 []

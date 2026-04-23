@@ -1,4 +1,16 @@
 [Tensors]
+    [T_train]
+        type = Scalar
+        values = '522.15 523.15 673.15 673.15 673.15 753.15 823.15 823.15 824.15'
+        batch_shape = '(9)'
+        intermediate_dimension = 1
+    []
+    [T_values]
+        type = Scalar
+        values = '523.15 523.15 673.15 673.15 673.15 753.15 823.15 823.15 823.15'
+        batch_shape = '(9)'
+        intermediate_dimension = 1
+    []
     [C] # MPa
         type = Scalar
         values = '14.5e3'
@@ -24,10 +36,11 @@
         values = '2956.0'
         batch_shape = '(1)'
     []
-    [Bk] # MPa * s
+    [Bk_values] # MPa * s
         type = Scalar
-        values = '4.15e-8'
-        batch_shape = '(1)'
+        values = '4.15e-8 4.15e-8 4.15e-8 4.15e-8 4.15e-8 4.15e-8 4.15e-8 4.15e-8 4.15e-8'
+        batch_shape = '(9)'
+        intermediate_dimension = 1
     []
     [S]
         type = Scalar
@@ -77,6 +90,12 @@
 []
 
 [Models]
+    [Bk]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'Bk_values'
+    []
     [E]
         type = ScalarQuadraticInterpolation
         a = '-2.716e-2'

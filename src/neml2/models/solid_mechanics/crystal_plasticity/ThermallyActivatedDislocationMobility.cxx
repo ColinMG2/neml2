@@ -62,18 +62,26 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
     const auto mcl_eff      = macaulay(_tau_eff());                         // Positive effective shear stress (for pre-exponential driving force)
     const auto tau_1        = _tau_eff() - _tau_a();                        // Excess stress above athermal threshold
     const auto tau_tilda    = tau_1 / _tau_p;
-    const auto phi          = pow((1.0 + exp(clamp(-_s * tau_tilda, -50.0, 50.0))), -1);
+    const auto sig_core     = -_s * tau_tilda;
+    const auto sig_arg      = clamp(sig_core, -50.0, 50.0);
+    const auto sig_exp      = exp(sig_arg);
+    const auto phi          = pow((1.0 + sig_exp), -1);
     const auto eps          = 1.0e-6;
     const auto tau_th       = phi * macaulay(tau_1) + (1.0 - phi) * eps * _tau_p;
-    const auto tau_ratio    = clamp(tau_th / _tau_p, 0.0, 1.0 - 1.0e-6);
+    const auto tau_ratio_unclamped = tau_th / _tau_p;
+    const auto tau_ratio    = clamp(tau_ratio_unclamped, 0.0, 1.0 - 1.0e-6);
+    const auto tau_ratio_safe = clamp(tau_ratio, 1.0e-30, 1.0);
     const auto inner        = 1.0 - pow(tau_ratio, _p);
     const auto inner_safe   = clamp(inner, 1.0e-10, 1.0e30);
     const auto D_G          = _D_H * (pow(inner_safe, _q) - _T() / _T_0);
-    const auto exp_arg      = clamp((-D_G / (_k_B * _T())), -50.0, 50.0);
+    const auto exp_core     = -D_G / (_k_B * _T());
+    const auto exp_arg      = clamp(exp_core, -50.0, 50.0);
     const auto exp_val      = exp(exp_arg);
     const auto v_kp         = K * mcl_eff * exp_val;
     const auto v_drag       = mcl_eff * _b / _Bk;
-    const auto Q            = v_kp * v_drag / (v_kp + v_drag + 1.0e-30);
+    const auto q_eps        = 1.0e-30;
+    const auto Q_denom      = v_kp + v_drag + q_eps;
+    const auto Q            = v_kp * v_drag / Q_denom;
     const auto v            = phi * Q;
 
     if (out)
@@ -88,11 +96,10 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
 
         // -------- CHAIN RULE COMPUTATION for dv_dtau_eff --------
 
-        const auto tau_1_safe           = clamp(tau_1, 1.0e-30, 1.0e30);
         const auto dtau1_dtau_eff       = 1.0;
         const auto dtau_tilda_dtau_eff  = 1.0 / _tau_p * dtau1_dtau_eff;
         const auto dphi_dtau_eff        = pow(phi, 2.0) * _s * exp(-_s * tau_tilda) * dtau_tilda_dtau_eff;
-        const auto dtau_ratio_dtau_eff  = 1 / _tau_p * (dphi_dtau_eff * macaulay(tau_1_safe) + phi * heaviside(tau_1_safe) * dtau1_dtau_eff) - eps * dphi_dtau_eff;
+        const auto dtau_ratio_dtau_eff  = 1 / _tau_p * (dphi_dtau_eff * macaulay(tau_1) + phi * heaviside(tau_1) * dtau1_dtau_eff) - eps * dphi_dtau_eff;
         const auto dD_G_dtau_eff        = -_D_H * _q * pow(inner_safe, _q - 1.0) * _p * pow(tau_ratio, _p - 1.0) * dtau_ratio_dtau_eff;
         const auto dv_kp_dtau_eff       = K * exp_val * (heaviside(_tau_eff()) - mcl_eff / (_k_B * _T()) * dD_G_dtau_eff);
         const auto dv_drag_dtau_eff     = heaviside(_tau_eff()) * _b / _Bk;
@@ -106,7 +113,7 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
         const auto dtau1_dtau_a         = -1.0;
         const auto dtau_tilda_dtau_a    = 1 / _tau_p * dtau1_dtau_a;
         const auto dphi_dtau_a          = pow(phi, 2.0) * _s * exp(-_s * tau_tilda) * dtau_tilda_dtau_a;
-        const auto dtau_ratio_dtau_a    = 1 / _tau_p * (dphi_dtau_a * macaulay(tau_1_safe) + phi * heaviside(tau_1_safe) * dtau1_dtau_a) - eps * dphi_dtau_a;
+        const auto dtau_ratio_dtau_a    = 1 / _tau_p * (dphi_dtau_a * macaulay(tau_1) + phi * heaviside(tau_1) * dtau1_dtau_a) - eps * dphi_dtau_a;
         const auto dD_G_dtau_a          = -_D_H * _q * pow(inner_safe, _q - 1.0) * _p * pow(tau_ratio, _p - 1.0) * dtau_ratio_dtau_a;
         const auto dv_kp_dtau_a         = - K * mcl_eff / (_k_B * _T()) * dD_G_dtau_a * exp_val;
         const auto dQ_dtau_a            = (v_drag * dv_kp_dtau_a * (v_kp + v_drag) - v_kp * v_drag * dv_kp_dtau_a) / pow(v_kp + v_drag + 1.0e-30, 2.0);
@@ -143,8 +150,8 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
 
         // -------- CHAIN RULE COMPUTATION for dv_dtau_p --------
 
-        const auto dphi_dtau_p          = -pow(phi, 2.0) * _s * tau_1_safe * exp(-_s * tau_tilda) / pow(_tau_p, 2.0);
-        const auto dtau_th_dtau_p       = dphi_dtau_p * macaulay(tau_1_safe) + eps - eps * (_tau_p * dphi_dtau_p + phi);
+        const auto dphi_dtau_p          = -pow(phi, 2.0) * _s * tau_1 * exp(-_s * tau_tilda) / pow(_tau_p, 2.0);
+        const auto dtau_th_dtau_p       = dphi_dtau_p * macaulay(tau_1) + eps - eps * (_tau_p * dphi_dtau_p + phi);
         const auto dtau_ratio_dtau_p    = dtau_th_dtau_p / _tau_p - tau_ratio / _tau_p;
         const auto dD_G_dtau_p          = -_D_H * _q * pow(inner_safe, _q - 1.0) * _p * pow(tau_ratio, _p - 1.0) * dtau_ratio_dtau_p;
         const auto dv_kp_dtau_p         = -K * mcl_eff / (_k_B * _T()) * dD_G_dtau_p * exp_val;
@@ -193,7 +200,7 @@ ThermallyActivatedDislocationMobility::set_value(bool out, bool dout_din, bool /
         // -------- CHAIN RULE COMPUTATION for dv_ds --------
 
         const auto dphi_ds              = pow(phi, 2.0) * tau_tilda * exp(-_s * tau_tilda);
-        const auto dtau_ratio_ds        = macaulay(tau_1_safe) / _tau_p * dphi_ds - eps * dphi_ds;
+        const auto dtau_ratio_ds        = macaulay(tau_1) / _tau_p * dphi_ds - eps * dphi_ds;
         const auto dD_G_ds              = -_D_H * _q * pow(inner_safe, _q - 1.0) * _p * pow(tau_ratio, _p - 1.0) * dtau_ratio_ds;
         const auto dv_kp_ds             = -K * mcl_eff / (_k_B * _T()) * dD_G_ds * exp_val;
         const auto dQ_ds                = (v_drag * dv_kp_ds * (v_kp + v_drag) - v_kp * v_drag * dv_kp_ds) / pow(v_kp + v_drag + 1.0e-30, 2.0);

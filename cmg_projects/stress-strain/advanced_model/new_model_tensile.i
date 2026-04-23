@@ -1,82 +1,153 @@
 [Tensors]
-    [C] # MPa
+    [T_train]
         type = Scalar
-        values = '5.0e3'
-        batch_shape = '(1)'
+        values = '522.15 573.15 724.15'
+        batch_shape = '(3)'
+        intermediate_dimension = 1
     []
-    [g] # unitless
+    [T_values]
         type = Scalar
-        values = '30.0'
-        batch_shape = '(1)'
+        values = '523.15 573.15 723.15'
+        batch_shape = '(3)'
+        intermediate_dimension = 1
     []
-    [k1] # microns^-1
+    [C_values] # MPa
         type = Scalar
-        values = '5.0'
-        batch_shape = '(1)'
+        values = '5.0e3 5.0e3 5.0e3'
+        batch_shape = '(3)'
+        intermediate_dimension = 1
     []
-    [k2] # unitless
+    [g_values] # unitless
         type = Scalar
-        values = '3.5'
-        batch_shape = '(1)'
+        values = '30.0 30.0 30.0'
+        batch_shape = '(3)'
+        intermediate_dimension = 1
     []
-    [T_0] # K
+    [k1_values] # microns^-1
         type = Scalar
-        values = '249.9387'
-        batch_shape = '(1)'
+        values = '5.0 5.0 5.0'
+        batch_shape = '(3)'
+        intermediate_dimension = 1
     []
-    [Bk] # MPa * s
+    [k2_values] # unitless
         type = Scalar
-        values = '6.6e-6'
-        batch_shape = '(1)'
+        values = '3.5 3.5 3.5'
+        batch_shape = '(3)'
+        intermediate_dimension = 1
     []
-    [S]
+    [T_0_values] # K
         type = Scalar
-        values = '30.0'
-        batch_shape = '(1)'
+        values = '249.9387 249.9387 249.9387'
+        batch_shape = '(3)'
+        intermediate_dimension = 1
+    []
+    [Bk_values] # MPa * s
+        type = Scalar
+        values = '6.6e-6 6.6e-6 6.6e-6'
+        batch_shape = '(3)'
+        intermediate_dimension = 1
+    []
+    [S_values]
+        type = Scalar
+        values = '30.0 30.0 30.0'
+        batch_shape = '(3)'
+        intermediate_dimension = 1
     []
     [tau_p] # MPa
         type = Scalar
         values = '360'
+        batch_shape = '(1)'
     []
     [H_0] # eV
         type = Scalar
         values = '0.65'
+        batch_shape = '(1)'
     []
     [alpha]
         type = Scalar
         values = '0.5'
+        batch_shape = '(1)'
     []
     [p]
         type = Scalar
         values = '0.5'
+        batch_shape = '(1)'
     []
     [q]
         type = Scalar
         values = '1.25'
+        batch_shape = '(1)'
     []
     [m]
         type = Scalar
         values = '0.333'
+        batch_shape = '(1)'
     []
     [a] # microns
         type = Scalar
         values = '2.868e-4'
+        batch_shape = '(1)'
     []
     [b] # microns
         type = Scalar
         values = '2.483760858e-4'
+        batch_shape = '(1)'
     []
     [h] # microns
         type = Scalar
         values = '2.703976331e-4'
+        batch_shape = '(1)'
     []
     [kB] # eV/K
         type = Scalar
         values = '8.617e-5'
+        batch_shape = '(1)'
     []
 []
 
 [Models]
+    [C]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'C_values'
+    []
+    [g]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'g_values'
+    []
+    [k1]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'k1_values'
+    []
+    [k2]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'k2_values'
+    []
+    [T_0]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'T_0_values'
+    []
+    [Bk]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'Bk_values'
+    []
+    [S]
+        type = ScalarLinearInterpolation
+        argument = 'forces/T'
+        abscissa = 'T_train'
+        ordinate = 'S_values'
+    []
     [E]
         type = ScalarQuadraticInterpolation
         a = '-7.626e-2'

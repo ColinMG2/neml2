@@ -1,116 +1,96 @@
 [Tensors]
     [C] # MPa
         type = Scalar
-        values = '14.5e3'
+        values = 0
         batch_shape = '(1)'
     []
     [g] # unitless
         type = Scalar
-        values = '300.0'
+        values = 0
         batch_shape = '(1)'
     []
-    [k1] # mm^-1
+    [k1] # m^-1
         type = Scalar
-        values = '8.3e1'
+        values = 0
         batch_shape = '(1)'
     []
     [k2] # unitless
         type = Scalar
-        values = '40.0'
-        batch_shape = '(1)'
-    []
-    [T_0] # K
-        type = Scalar
-        values = '2956.0'
-        batch_shape = '(1)'
-    []
-    [Bk] # MPa * s
-        type = Scalar
-        values = '8.3e-11'
+        values = 0
         batch_shape = '(1)'
     []
     [S]
         type = Scalar
-        values = '10.0'
+        values = 10.0
         batch_shape = '(1)'
+    []
+    [tau_a]
+        type = Scalar
+        values = 0
     []
     [tau_p] # MPa
         type = Scalar
-        values = '2030.0'
+        values = 2030
     []
-    [H_0] # eV
+    [H_0] #eV
         type = Scalar
-        values = '1.63'
+        values = 1.63
     []
     [alpha]
         type = Scalar
-        values = '0.5'
+        values = 0.0
     []
     [p]
         type = Scalar
-        values = '0.86'
+        values = 0.86
     []
     [q]
         type = Scalar
-        values = '1.25'
+        values = 1.69
+    []
+    [Bk] # MPa*s
+        type = Scalar
+        values = 8.3e-11
+    []
+    [T_0] #K
+        type = Scalar
+        values = 2956
+    []
+    [a] #mm
+        type = Scalar
+        values = 3.16e-7
+    []
+    [b] #mm
+        type = Scalar
+        values = 2.737e-7
+    []
+    [h] #mm
+        type = Scalar
+        values = 2.581e-7
+    []
+    [k_B] # eV/K
+        type = Scalar
+        values = 8.617e-5
     []
     [m]
         type = Scalar
-        values = '0.333'
+        values = 0.333
     []
-    [a] # mm
+    [E] #MPa
         type = Scalar
-        values = '3.16e-7'
+        values = 410000
     []
-    [b] # mm
+    [nu]
         type = Scalar
-        values = '2.73664028e-7'
+        values = 0.28
     []
-    [h] # mm
+    [G]
         type = Scalar
-        values = '2.5801292e-7'
-    []
-    [kB] # eV/K
-        type = Scalar
-        values = '8.617e-5'
+        values = 160156.25
     []
 []
 
 [Models]
-    [E]
-        type = ScalarQuadraticInterpolation
-        a = '-2.716e-2'
-        b = '0.01253e3'
-        c = '396507'
-        argument = 'forces/T'
-        output = 'E'
-    []
-    [nu]
-        type = ScalarQuadraticInterpolation
-        a = '3.157e-9'
-        b = '-8.030e-6'
-        c = '0.285'
-        argument = 'forces/T'
-        output = 'nu'
-    []
-    [G_bottom_inner]
-        type = ScalarLinearCombination
-        from_var = 'nu'
-        to_var = 'G_bottom_inner'
-        constant_coefficient = '1'
-    []
-    [G_bottom]
-        type = ScalarMultiplication
-        from_var = 'G_bottom_inner'
-        to_var = 'G_bottom'
-        coefficient = '2'
-    []
-    [G]
-        type = ScalarMultiplication
-        from_var = 'E G_bottom'
-        to_var = 'G'
-        reciprocal = 'false true'
-    []
     [mandel_stress]
         type = IsotropicMandelStress
     []
@@ -180,7 +160,7 @@
         T_0 = 'T_0'
         p = 'p'
         q = 'q'
-        k_B = 'kB'
+        k_B = 'k_B'
         s = 'S'
         H_0 = 'H_0'
         v_disl = 'state/internal/v_disl'
@@ -252,6 +232,6 @@
     []
     [implicit_rate]
         type = ComposedModel
-        models = 'G_bottom G_bottom_inner mandel_stress kinharden overstress vonmises athermal normality shear_eff v_disl rho_m_rate flow_rate Eprate Erate Eerate elasticity integrate_rho_m integrate_stress integrate_X mixed mixed_old rename'
+        models = 'mandel_stress kinharden overstress vonmises athermal normality shear_eff v_disl rho_m_rate flow_rate Eprate Erate Eerate elasticity integrate_rho_m integrate_stress integrate_X mixed mixed_old rename'
     []
 []

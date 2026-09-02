@@ -5,7 +5,8 @@ from neml2.models.chain_rule import ChainRuleDict, ChainRuleAction
 from neml2.models.model import Model
 from neml2.schema import HitSchema, buffer, input, output, parameter, option
 from neml2.types import Scalar, exp, pow
-import math
+
+from ._validation import unsupplied
 
 @register_neml2_object("KocksMeckingMobileDensityStorageRecovery")
 class KocksMeckingMobileDensityStorageRecovery(Model):
@@ -40,7 +41,7 @@ class KocksMeckingMobileDensityStorageRecovery(Model):
 
         if self.thermally_activated_recovery:
             required_deps = ["k2_0", "Q_d", "k_B"]
-            missing = [dep for dep in required_deps if math.isnan(float(kwargs[dep]))]
+            missing = unsupplied(kwargs, required_deps)
             if missing:
                 raise ValueError(
                     f"{type(self).__name__}: include_solid_solution=True requires the "

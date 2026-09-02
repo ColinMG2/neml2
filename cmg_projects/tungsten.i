@@ -14,6 +14,16 @@
     type = Python
     expr = 'Scalar(2.73664028e-7)'
   []
+  [m]
+    ## Schmid factor (unitless)
+    type = Python
+    expr = 'Scalar(0.33)'
+  []
+  [k_B_eV]
+    ## eV/K
+    type = Python
+    expr = 'Scalar(8.617e-5)'
+  []
 []
 
 [Models]
@@ -35,7 +45,7 @@
   [vonmises]
     type = SR2Invariant
     invariant_type = 'VONMISES'
-    tensor = 'mandel_stress'
+    tensor = 'overstress'
     invariant = 'effective_stress'
   []
   [L]
@@ -80,8 +90,8 @@
     sigma_0 = 'athermal_solute_resistance'
     T = 'temperature'
     a = 3.16e-7
-    k_B = 8.617e-5
-    m = 0.33
+    k_B = 'k_B_eV'
+    m = 'm'
     B_k = 8.3e-11
     tau_p = 950
     T_0 = 3325.5
@@ -97,7 +107,7 @@
     type = ScalarMultiplication
     from = 'gamma_dot'
     to = 'flow_rate'
-    scaling = 0.33
+    scaling = 'm'
   []
   [rho_m_rate]
     type = KocksMeckingMobileDensityStorageRecovery
@@ -105,9 +115,8 @@
     thermally_activated_recovery = true
     k2_0 = 6000.0
     Q_d = 0.01
-    k_B = 8.617e-5
+    k_B = 'k_B_eV'
     T = 'temperature'
-    rho_m_dot = 'rho_m_dot'
   []
   [Eprate]
     type = AssociativePlasticFlow
@@ -169,7 +178,7 @@
     models = 'mandel_stress kinharden overstress vonmises L 
               isoharden yield_surface normality v_disl
               gamma_rate p_rate rho_m_rate Eprate eprate Erate Eerate
-              elasticity integrate_rho_m integrate_stress 
+              elasticity integrate_rho_m integrate_stress integrate_ep
               integrate_X mixed mixed_old'
   []
 []

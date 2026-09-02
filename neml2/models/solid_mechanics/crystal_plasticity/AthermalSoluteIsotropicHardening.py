@@ -5,7 +5,8 @@ from neml2.models.chain_rule import ChainRuleDict, ChainRuleAction
 from neml2.models.model import Model
 from neml2.schema import HitSchema, buffer, input, output, parameter, option
 from neml2.types import Scalar, exp, pow
-import math
+
+from ._validation import unsupplied
 
 @register_neml2_object("AthermalSoluteIsotropicHardening")
 class AthermalSoluteIsotropicHardening(Model):
@@ -47,7 +48,7 @@ class AthermalSoluteIsotropicHardening(Model):
         input("L", Scalar, "Mean Free Path", attr="_L_name"),
         input("T", Scalar, "Temperature", default=None, attr="_T_name"),
         input("rho_m", Scalar, "Mobile dislocation density", default=None, attr="_rho_m_name"),
-        input("p_dot", Scalar, "Equivalent plastic strain rate", default=None, attr="_p_dot_name"),
+        input("flow_rate", Scalar, "Equivalent plastic strain rate", default=None, attr="_flow_rate_name"),
         output("athermal_solute_resistance", Scalar, "Athermal solute resistance"),
         parameter("G", Scalar, "Shear Modulus"),
         parameter("alpha", Scalar, "Taylor interaction constant"),
@@ -68,7 +69,7 @@ class AthermalSoluteIsotropicHardening(Model):
     _L_name: str
     _T_name: str | None
     _rho_m_name: str | None
-    _p_dot_name: str | None
+    _flow_rate_name: str | None
     G: Scalar
     alpha: Scalar
     b: Scalar
@@ -85,7 +86,7 @@ class AthermalSoluteIsotropicHardening(Model):
 
         if self.include_solid_solution:
             required_deps = ["t_a0", "Q_a", "k_B", "m", "tau_s0", "p_ss"]
-            missing = [dep for dep in required_deps if math.isnan(float(kwargs[dep]))]
+            missing = unsupplied(kwargs, required_deps)
             if missing:
                 raise ValueError(
                     f"{type(self).__name__}: include_solid_solution=True requires the "
@@ -106,7 +107,7 @@ class AthermalSoluteIsotropicHardening(Model):
         L = bound[self._L_name]
         T = bound.get(self._T_name) if self._T_name is not None else None
         rho_m = bound.get(self._rho_m_name) if self._rho_m_name is not None else None
-        p_dot = bound.get(self._p_dot_name) if self._p_dot_name is not None else None
+        p_dot = bound.get(self._flow_rate_name) if self._flow_rate_name is not None else None
 
         G = self._get_param("G", promoted_params, Scalar)
         alpha = self._get_param("alpha", promoted_params, Scalar)
@@ -119,7 +120,7 @@ class AthermalSoluteIsotropicHardening(Model):
             if T is None or rho_m is None or p_dot is None:
                 raise ValueError(
                     f"{type(self).__name__}: include_solid_solution=True requires both "
-                    "'temperature', 'rho_m', and 'p_dot' to be supplied as inputs."
+                    "'temperature', 'rho_m', and 'flow_rate' to be supplied as inputs."
                 )
             assert self.m is not None
             assert self.k_B is not None
@@ -152,7 +153,7 @@ class AthermalSoluteIsotropicHardening(Model):
             if T is None or rho_m is None or p_dot is None:
                 raise ValueError(
                     f"{type(self).__name__}: include_solid_solution=True requires both "
-                    "'temperature', 'rho_m', and 'p_dot' to be supplied as inputs."
+                    "'temperature', 'rho_m', and 'flow_rate' to be supplied as inputs."
                 )
             assert self.m is not None
             assert self.k_B is not None
@@ -178,8 +179,8 @@ class AthermalSoluteIsotropicHardening(Model):
             dsigma_0_drho_m = -(common * self.m * L * b) / (t_a * p_dot)
             actions["rho_m"] = lambda V, c=dsigma_0_drho_m: c * V
 
-            dsigma_0_dp_dot = common * L * self.m * rho_m * b / (t_a * pow(p_dot, 2.0))
-            actions["p_dot"] = lambda V, c=dsigma_0_dp_dot: c * V
+            dsigma_0_dflow_rate = common * L * self.m * rho_m * b / (t_a * pow(p_dot, 2.0))
+            actions["flow_rate"] = lambda V, c=dsigma_0_dflow_rate: c * V
 
         actions["L"] = lambda V, c=dsigma_0_dL: c * V
 

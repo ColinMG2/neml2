@@ -3,7 +3,7 @@
   [unit]
     type = ModelUnitTest
     model = 'model'
-    input_Scalar_names = 'L T rho_m p_dot'
+    input_Scalar_names = 'L T rho_m flow_rate'
     input_Scalar_values = '1.0e-6 573.15 1.0e12 4.289e-4'
     output_Scalar_names = 'athermal_solute_resistance'
     output_Scalar_values = '4.12916749e8'
@@ -22,7 +22,7 @@
     k_B = 1.380649e-23
     T = 'T'
     rho_m = 'rho_m'
-    p_dot = 'p_dot'
+    flow_rate = 'flow_rate'
     m = 0.33
     tau_s0 = 130e6
     p_ss = 0.37

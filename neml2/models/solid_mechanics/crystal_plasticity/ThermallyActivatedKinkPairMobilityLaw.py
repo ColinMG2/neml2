@@ -3,7 +3,7 @@ from __future__ import annotations
 from neml2.factory import register_neml2_object
 from neml2.models.chain_rule import ChainRuleDict, ChainRuleAction
 from neml2.models.model import Model
-from neml2.schema import HitSchema, buffer, input, output, parameter
+from neml2.schema import HitSchema, buffer, input, output, option, parameter
 from neml2.types import Scalar, exp, pow, macaulay, clamp, heaviside
 import math
 
@@ -23,7 +23,17 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
         parameter("T_0", Scalar, "Athermal transition temperature"),
         parameter("p", Scalar, "Mobility fitting exponent p"),
         parameter("q", Scalar, "Mobility fitting exponent q"),
-        parameter("H_0", Scalar, "Reference activation enthalpy")
+        parameter("H_0", Scalar, "Reference activation enthalpy"),
+        option(
+            "tau_hat_min",
+            float,
+            "Derivative-only floor on the normalized driving stress tau*/tau_p. With "
+            "p < 1 the barrier derivative carries tau_hat**(p-1), which diverges at "
+            "incipient yield (tau* -> 0) and poisons the Jacobian with NaN. The "
+            "residual itself is untouched.",
+            default=1.0e-6,
+            attr="tau_hat_min",
+        )
     )
 
     _sigma_eff_name: str
@@ -38,6 +48,7 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
     p: Scalar
     q: Scalar
     H_0: Scalar
+    tau_hat_min: float
 
     def forward(
             self,
@@ -81,15 +92,19 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
 
         actions: dict[str, ChainRuleAction] = {}
 
+        # Derivative-only floor (the residual keeps the unfloored tau_ratio): p < 1
+        # makes tau_ratio**(p-1) singular as tau* -> 0, i.e. at every elastic step.
+        tau_ratio_d = clamp(tau_ratio, self.tau_hat_min, 1.0 - 1.0e-6)
+
         dtau_1_dsigma_eff = heaviside(tau_eff - tau_0) * self.m
         dtau_tilda_dtau_eff = 1.0 / tau_p * dtau_1_dsigma_eff
-        ddg_dtau_eff = heaviside(dg) * q * pow(1 - pow(tau_ratio, p), q - 1.0) * -p * pow(tau_ratio, p - 1.0) * dtau_tilda_dtau_eff
+        ddg_dtau_eff = heaviside(dg) * q * pow(1 - pow(tau_ratio, p), q - 1.0) * -p * pow(tau_ratio_d, p - 1.0) * dtau_tilda_dtau_eff
         dv_disl_dtau_eff = K * dtau_1_dsigma_eff * exp_val - K * tau_1 * H_0 / (2 * self.k_B * T) * ddg_dtau_eff * exp_val
         actions["sigma_eff"] = lambda V, c=dv_disl_dtau_eff: c * V
 
         dtau_1_dsigma_0 = -heaviside(tau_eff - tau_0) * self.m
         dtau_tilda_dtau_0 = 1.0 / tau_p * dtau_1_dsigma_0
-        ddg_dtau_0 = heaviside(dg) * q * pow(1.0 - pow(tau_ratio, p), q - 1.0) * -p * pow(tau_ratio, p - 1.0) * dtau_tilda_dtau_0
+        ddg_dtau_0 = heaviside(dg) * q * pow(1.0 - pow(tau_ratio, p), q - 1.0) * -p * pow(tau_ratio_d, p - 1.0) * dtau_tilda_dtau_0
         dv_disl_dtau_0 = K * dtau_1_dsigma_0 * exp_val - K * tau_1 * H_0 / (2.0 * self.k_B * T) * ddg_dtau_0 * exp_val
         actions["sigma_0"] = lambda V, c=dv_disl_dtau_0: c * V
 

@@ -3,9 +3,10 @@ from __future__ import annotations
 from neml2.factory import register_neml2_object
 from neml2.models.chain_rule import ChainRuleDict, ChainRuleAction
 from neml2.models.model import Model
-from neml2.schema import HitSchema, buffer, input, output, parameter, option
-from neml2.types import Scalar, sqrt, pow
-import math
+from neml2.schema import HitSchema, input, output, parameter, option
+from neml2.types import Scalar, sqrt, pow, clamp, heaviside
+
+from ._validation import unsupplied
 
 @register_neml2_object("MeanFreePath")
 class MeanFreePath(Model):
@@ -13,6 +14,15 @@ class MeanFreePath(Model):
     hit = HitSchema(
         input("rho_m", Scalar, "Mobile dislocation density", attr="_rho_m_name"),
         output("L", Scalar, "Mean free path"),
+        option(
+            "rho_min",
+            float,
+            "Lower floor on the mobile dislocation density used to form the mean free "
+            "path. Guards sqrt(rho_m) and its derivative against a Newton iterate at or "
+            "below zero; set to 0.0 to disable.",
+            default=1.0e3,
+            attr="rho_min",
+        ),
         option("use_L2", bool, "Whether to include grain or sub-grain barriers", default=True, attr="use_L2"),
         option("use_L3", bool, "Whether to include precipitate obstacles", default=True, attr="use_L3"),
         parameter("c_lath", Scalar, "Geometric factor for lath boundary", default=0.0),
@@ -30,6 +40,7 @@ class MeanFreePath(Model):
     )
 
     _rho_m_name: str
+    rho_min: float
     use_L2: bool
     use_L3: bool
     c_lath: Scalar
@@ -50,7 +61,7 @@ class MeanFreePath(Model):
 
         if self.use_L2:
             required_deps = ["c_lath", "d_lath", "c_block", "d_block", "c_packet", "d_packet", "c_PAG", "d_PAG"]
-            missing = [dep for dep in required_deps if math.isnan(float(kwargs[dep]))]
+            missing = unsupplied(kwargs, required_deps)
             if missing:
                 raise ValueError(
                 f"{type(self).__name__}: use_L2=True requires the following parameters "
@@ -58,7 +69,7 @@ class MeanFreePath(Model):
             )
         if self.use_L3:
             required_deps = ["c_MX", "d_MX", "c_M23C6", "d_M23C6"]
-            missing = [dep for dep in required_deps if float(kwargs[dep]) == 0.0]
+            missing = unsupplied(kwargs, required_deps)
             if missing:
                 raise ValueError(
                     f"{type(self).__name__}: use_L3=True requires the following parameters "
@@ -77,7 +88,11 @@ class MeanFreePath(Model):
         bound = dict(zip(names, inputs, strict=True))
 
         rho_m = bound[self._rho_m_name]
-        inv_L = sqrt(rho_m)
+        # Floor the density before the square root: during the implicit solve a
+        # Newton iterate can undershoot to zero or below, where sqrt is NaN and
+        # dsqrt/drho is infinite.
+        rho_eff = clamp(rho_m, self.rho_min)
+        inv_L = sqrt(rho_eff)
 
         if self.use_L2:
             c_lath = self._get_param("c_lath", promoted_params, Scalar)
@@ -112,8 +127,10 @@ class MeanFreePath(Model):
 
         actions: dict[str, ChainRuleAction] = {}
 
-        # Let S = inv_L = sqrt(rho_m) + lambda_micro
-        dS_drho_m = 1/(2 * sqrt(rho_m))
+        # Let S = inv_L = sqrt(rho_eff) + lambda_micro. Where the floor binds, L is
+        # independent of rho_m, so the branch is zeroed to keep residual and
+        # Jacobian consistent.
+        dS_drho_m = heaviside(rho_m - self.rho_min) / (2 * sqrt(rho_eff))
         dL_drho_m = -pow(L, 2.0) * dS_drho_m
         actions["rho_m"] = lambda V, c=dL_drho_m: c * V
 

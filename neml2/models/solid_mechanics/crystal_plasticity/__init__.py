@@ -34,11 +34,15 @@ from .CrystalPlasticityDeformationGradientPredictor import (
     CrystalPlasticityDeformationGradientPredictor,
 )
 from .CrystalPlasticityStrainPredictor import CrystalPlasticityStrainPredictor
+from .AthermalSoluteIsotropicHardening import AthermalSoluteIsotropicHardening
 from .DislocationObstacleStrengthMap import DislocationObstacleStrengthMap
 from .ElasticStrainRate import ElasticStrainRate
 from .FixOrientation import FixOrientation
+from .KocksMeckingMobileDensityStorageRecovery import KocksMeckingMobileDensityStorageRecovery
 from .LinearSingleSlipHardeningRule import LinearSingleSlipHardeningRule
+from .MeanFreePath import MeanFreePath
 from .OrientationRate import OrientationRate
+from .OrowanPlasticShearRate import OrowanPlasticShearRate
 from .PerSlipForestDislocationEvolution import PerSlipForestDislocationEvolution
 from .PlasticDeformationRate import PlasticDeformationRate
 from .PlasticSpatialVelocityGradient import PlasticSpatialVelocityGradient
@@ -51,16 +55,21 @@ from .SlipRule import SlipRule
 from .SlipStrengthMap import SlipStrengthMap
 from .SlipSystemElasticInteraction import SlipSystemElasticInteraction
 from .SumSlipRates import SumSlipRates
+from .ThermallyActivatedKinkPairMobilityLaw import ThermallyActivatedKinkPairMobilityLaw
 from .VoceSingleSlipHardeningRule import VoceSingleSlipHardeningRule
 
 __all__ = [
+    "AthermalSoluteIsotropicHardening",
     "CrystalPlasticityDeformationGradientPredictor",
     "CrystalPlasticityStrainPredictor",
     "DislocationObstacleStrengthMap",
     "ElasticStrainRate",
     "FixOrientation",
+    "KocksMeckingMobileDensityStorageRecovery",
     "LinearSingleSlipHardeningRule",
+    "MeanFreePath",
     "OrientationRate",
+    "OrowanPlasticShearRate",
     "PerSlipForestDislocationEvolution",
     "PlasticDeformationRate",
     "PlasticSpatialVelocityGradient",
@@ -73,5 +82,6 @@ __all__ = [
     "SlipRule",
     "SlipStrengthMap",
     "SumSlipRates",
+    "ThermallyActivatedKinkPairMobilityLaw",
     "VoceSingleSlipHardeningRule",
 ]

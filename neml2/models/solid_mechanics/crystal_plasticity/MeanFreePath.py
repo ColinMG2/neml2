@@ -1,16 +1,40 @@
+# Copyright 2024, UChicago Argonne, LLC
+# All Rights Reserved
+# Software Name: NEML2 -- the New Engineering material Model Library, version 2
+# By: Argonne National Laboratory
+# OPEN SOURCE LICENSE (MIT)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 from __future__ import annotations
 
 from neml2.factory import register_neml2_object
-from neml2.models.chain_rule import ChainRuleDict, ChainRuleAction
+from neml2.models.chain_rule import ChainRuleAction, ChainRuleDict
 from neml2.models.model import Model
-from neml2.schema import HitSchema, input, output, parameter, option
-from neml2.types import Scalar, sqrt, pow, clamp, heaviside
+from neml2.schema import HitSchema, input, option, output, parameter
+from neml2.types import Scalar, clamp, heaviside, pow, sqrt
 
 from ._validation import unsupplied
 
+
 @register_neml2_object("MeanFreePath")
 class MeanFreePath(Model):
-
     hit = HitSchema(
         input("rho_m", Scalar, "Mobile dislocation density", attr="_rho_m_name"),
         output("L", Scalar, "Mean free path"),
@@ -19,24 +43,41 @@ class MeanFreePath(Model):
             float,
             "Lower floor on the mobile dislocation density used to form the mean free "
             "path. Guards sqrt(rho_m) and its derivative against a Newton iterate at or "
-            "below zero; set to 0.0 to disable.",
+            "below zero; set to 0.0 to disable. **Dimensional**: carries the same units "
+            "as ``rho_m``, so it must be converted alongside the other length-dimensioned "
+            "inputs whenever the input file's unit system changes (the default is "
+            "1e3 mm^-2 == 1e-3 um^-2). A floor left above the operating density silently "
+            "pins the mean free path and zeroes dL/drho everywhere.",
             default=1.0e3,
             attr="rho_min",
         ),
-        option("use_L2", bool, "Whether to include grain or sub-grain barriers", default=True, attr="use_L2"),
-        option("use_L3", bool, "Whether to include precipitate obstacles", default=True, attr="use_L3"),
+        option(
+            "use_L2",
+            bool,
+            "Whether to include grain or sub-grain barriers",
+            default=True,
+            attr="use_L2",
+        ),
+        option(
+            "use_L3", bool, "Whether to include precipitate obstacles", default=True, attr="use_L3"
+        ),
         parameter("c_lath", Scalar, "Geometric factor for lath boundary", default=0.0),
         parameter("d_lath", Scalar, "Martensitic lath width", default=0.0),
         parameter("c_block", Scalar, "Geometric factor for block boundary", default=0.0),
         parameter("d_block", Scalar, "Mean block width", default=0.0),
         parameter("c_packet", Scalar, "Geometric factor for packet boundary", default=0.0),
         parameter("d_packet", Scalar, "Mean packet size", default=0.0),
-        parameter("c_PAG", Scalar, "Geometric factor for prior-austenite grain (PAG) boundary", default=0.0),
+        parameter(
+            "c_PAG",
+            Scalar,
+            "Geometric factor for prior-austenite grain (PAG) boundary",
+            default=0.0,
+        ),
         parameter("d_PAG", Scalar, "Mean PAG size", default=0.0),
         parameter("c_MX", Scalar, "Geometric factor for MX precipitate", default=0.0),
         parameter("d_MX", Scalar, "Mean MX precipitate spacing", default=0.0),
         parameter("c_M23C6", Scalar, "Geometric factor for M23C6 precipitate", default=0.0),
-        parameter("d_M23C6", Scalar, "Mean M23C6 precipitate spacing", default=0.0)
+        parameter("d_M23C6", Scalar, "Mean M23C6 precipitate spacing", default=0.0),
     )
 
     _rho_m_name: str
@@ -60,13 +101,22 @@ class MeanFreePath(Model):
         super().__init__(**kwargs)
 
         if self.use_L2:
-            required_deps = ["c_lath", "d_lath", "c_block", "d_block", "c_packet", "d_packet", "c_PAG", "d_PAG"]
+            required_deps = [
+                "c_lath",
+                "d_lath",
+                "c_block",
+                "d_block",
+                "c_packet",
+                "d_packet",
+                "c_PAG",
+                "d_PAG",
+            ]
             missing = unsupplied(kwargs, required_deps)
             if missing:
                 raise ValueError(
-                f"{type(self).__name__}: use_L2=True requires the following parameters "
-                f"to be defined in the input file: {missing}"
-            )
+                    f"{type(self).__name__}: use_L2=True requires the following parameters "
+                    f"to be defined in the input file: {missing}"
+                )
         if self.use_L3:
             required_deps = ["c_MX", "d_MX", "c_M23C6", "d_M23C6"]
             missing = unsupplied(kwargs, required_deps)
@@ -77,10 +127,10 @@ class MeanFreePath(Model):
                 )
 
     def forward(
-            self,
-            *args: Scalar,
-            v: ChainRuleDict | None = None,
-            **_: object,
+        self,
+        *args: Scalar,
+        v: ChainRuleDict | None = None,
+        **_: object,
     ) -> Scalar | tuple[Scalar, ChainRuleDict]:
         names = list(self.input_spec)
         n_in = len(names)
@@ -104,7 +154,7 @@ class MeanFreePath(Model):
             c_PAG = self._get_param("c_PAG", promoted_params, Scalar)
             d_PAG = self._get_param("d_PAG", promoted_params, Scalar)
 
-            inv_L2 = (c_lath/d_lath + c_block/d_block + c_packet/d_packet + c_PAG/d_PAG)
+            inv_L2 = c_lath / d_lath + c_block / d_block + c_packet / d_packet + c_PAG / d_PAG
             inv_L += inv_L2
 
         if self.use_L3:
@@ -113,7 +163,7 @@ class MeanFreePath(Model):
             c_M23C6 = self._get_param("c_M23C6", promoted_params, Scalar)
             d_M23C6 = self._get_param("d_M23C6", promoted_params, Scalar)
 
-            inv_L3 = (c_MX/d_MX + c_M23C6/d_M23C6)
+            inv_L3 = c_MX / d_MX + c_M23C6 / d_M23C6
             inv_L += inv_L3
 
         else:

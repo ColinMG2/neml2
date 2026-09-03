@@ -112,6 +112,7 @@ from .R2ToWR2 import R2ToWR2
 from .RateCondensation import RateCondensation
 from .Reduction import Reduction
 from .RotationMatrix import RotationMatrix
+from .ScalarExponential import ScalarExponential
 from .ScalarMultiplication import ScalarMultiplication
 from .ScalarPNorm import ScalarPNorm
 from .ScalarToDiagonalSR2 import ScalarToDiagonalSR2
@@ -187,6 +188,7 @@ __all__ = [
     "SR2BilinearInterpolation",
     "VecBilinearInterpolation",
     "RotationMatrix",
+    "ScalarExponential",
     "ScalarMultiplication",
     "ScalarPNorm",
     "ScalarToDiagonalSR2",

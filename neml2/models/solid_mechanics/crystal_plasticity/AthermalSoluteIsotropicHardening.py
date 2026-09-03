@@ -1,32 +1,62 @@
+# Copyright 2024, UChicago Argonne, LLC
+# All Rights Reserved
+# Software Name: NEML2 -- the New Engineering material Model Library, version 2
+# By: Argonne National Laboratory
+# OPEN SOURCE LICENSE (MIT)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 from __future__ import annotations
 
 from neml2.factory import register_neml2_object
-from neml2.models.chain_rule import ChainRuleDict, ChainRuleAction
+from neml2.models.chain_rule import ChainRuleAction, ChainRuleDict
 from neml2.models.model import Model
-from neml2.schema import HitSchema, buffer, input, output, parameter, option
-from neml2.types import Scalar, exp, pow
+from neml2.schema import HitSchema, buffer, input, option, output, parameter
+from neml2.types import Scalar, clamp, exp, pow
 
 from ._validation import unsupplied
 
+
 @register_neml2_object("AthermalSoluteIsotropicHardening")
 class AthermalSoluteIsotropicHardening(Model):
-    r"""The isotropic resistance combines an athermal microstructural term $\sigma_a$ and a solute term $\sigma_{ss}$, 
+    r"""The isotropic resistance combines an athermal microstructural term $\sigma_a$ and a solute
+    term $\sigma_{ss}$,
     written as:
     $$
     \sigma_0=\sigma_a+\sigma_{ss}
     $$
-    
-    $\sigma_a$ is an Orowan-type obstacle strengthening from a population with 
+
+    $\sigma_a$ is an Orowan-type obstacle strengthening from a population with
     mean free path $L$ calculated as:
     $$
     \sigma_a=\frac{\alpha G b}{L}
     $$
-    
-    When ``include_solid_solution`` is set to ``true``, a thermally-activated solute-drag term $\sigma_{ss}$ describes the 
-    interaction between mobile dislocations and diffusing solute atoms. This term should be set to ``false`` for polycrystal 
-    materials (e.g., tungsten) and should be set to ``true`` for RAFM steel to capture the dynamic strain-aging regime, including 
-    flow stress plateau and suppressed strain-rate sensitivity observed at intermediate temperatures. The expression is based on 
-    the ratio of the dislocation waiting time $t_w = L / v_{disl} = L\bar{m} \rho_m b / \dot{p}$ and an Arrhenius solute-interaction 
+
+    When ``include_solid_solution`` is set to ``true``, a thermally-activated solute-drag
+    term $\sigma_{ss}$ describes the interaction between mobile dislocations and
+    diffusing solute atoms. This term should be set to ``false`` for polycrystal
+    materials (e.g., tungsten) and should be set to ``true`` for RAFM steel to
+    capture the dynamic strain-aging regime, including
+    flow stress plateau and suppressed strain-rate sensitivity observed at
+    intermediate temperatures. The expression is based on
+    the ratio of the dislocation waiting time
+    $t_w = L / v_{disl} = L\bar{m} \rho_m b / \dot{p}$ and an Arrhenius solute-interaction
     time $t_a = t_{a,0} \exp(Q_a / (k_B T))$:
     $$
     \tau_{ss} = \tau_{s,0} \exp\!\left[-\left(\frac{t_w}{t_a}\right)^{p_{ss}}\right],
@@ -35,7 +65,7 @@ class AthermalSoluteIsotropicHardening(Model):
     $$
     and the total resistance is $\sigma_0 = \sigma_a + \sigma_{ss}$
     (otherwise $\sigma_0 = \sigma_a$).
-    
+
     Note: unlike the original C++ implementation, ``temperature`` and
     ``v_disl`` are declared as *optional* inputs (only entering the model's
     dependency graph when actually supplied in the input file), but
@@ -48,22 +78,35 @@ class AthermalSoluteIsotropicHardening(Model):
         input("L", Scalar, "Mean Free Path", attr="_L_name"),
         input("T", Scalar, "Temperature", default=None, attr="_T_name"),
         input("rho_m", Scalar, "Mobile dislocation density", default=None, attr="_rho_m_name"),
-        input("flow_rate", Scalar, "Equivalent plastic strain rate", default=None, attr="_flow_rate_name"),
+        input(
+            "flow_rate",
+            Scalar,
+            "Equivalent plastic strain rate",
+            default=None,
+            attr="_flow_rate_name",
+        ),
         output("athermal_solute_resistance", Scalar, "Athermal solute resistance"),
         parameter("G", Scalar, "Shear Modulus"),
         parameter("alpha", Scalar, "Taylor interaction constant"),
         buffer("b", Scalar, "Burger's vector magnitude"),
-        option("include_solid_solution", 
-               bool, 
-               "Whether to include the Arrhenius-type solute resistance.", 
-                default=True, 
-                attr="include_solid_solution"),
+        option(
+            "include_solid_solution",
+            bool,
+            "Whether to include the Arrhenius-type solute resistance.",
+            default=True,
+            attr="include_solid_solution",
+        ),
         parameter("t_a0", Scalar, "Solute-interaction time prefactor", default=0.0),
         parameter("Q_a", Scalar, "Solute-interaction activation energy", default=0.0),
         buffer("k_B", Scalar, "Boltzmann constant", default=0.0),
         buffer("m", Scalar, "Schmid factor", default=0.0),
         parameter("tau_s0", Scalar, "Saturation solute resistance", default=0.0),
-        parameter("p_ss", Scalar, "Solute-drag exponent (controls the transition towards saturation)", default=0.0),
+        parameter(
+            "p_ss",
+            Scalar,
+            "Solute-drag exponent (controls the transition towards saturation)",
+            default=0.0,
+        ),
     )
 
     _L_name: str
@@ -94,10 +137,10 @@ class AthermalSoluteIsotropicHardening(Model):
                 )
 
     def forward(
-            self,
-            *args: Scalar,
-            v: ChainRuleDict | None = None,
-            **_: object,
+        self,
+        *args: Scalar,
+        v: ChainRuleDict | None = None,
+        **_: object,
     ) -> Scalar | tuple[Scalar, ChainRuleDict]:
         names = list(self.input_spec)
         n_in = len(names)
@@ -137,7 +180,9 @@ class AthermalSoluteIsotropicHardening(Model):
             tau_s0 = self._get_param("tau_s0", promoted_params, Scalar)
             p_ss = self._get_param("p_ss", promoted_params, Scalar)
             x = t_w / t_a
-            tau_ss = tau_s0 * exp(-pow(x, p_ss))
+            y = pow(x, p_ss)
+            y_safe = clamp(y, None, 30.0)
+            tau_ss = tau_s0 * exp(-y_safe)
 
             sigma_ss = tau_ss / self.m
 
@@ -162,13 +207,15 @@ class AthermalSoluteIsotropicHardening(Model):
 
             t_a0 = self._get_param("t_a0", promoted_params, Scalar)
             Q_a = self._get_param("Q_a", promoted_params, Scalar)
-            t_a = t_a0 * exp(Q_a / (self.k_B * T))
-            x = t_w / t_a
             tau_s0 = self._get_param("tau_s0", promoted_params, Scalar)
             p_ss = self._get_param("p_ss", promoted_params, Scalar)
-            tau_ss = tau_s0 * exp(-pow(x, p_ss))
+            t_a = t_a0 * exp(Q_a / (self.k_B * T))
+            x = t_w / t_a
+            y = pow(x, p_ss)
+            y_safe = clamp(y, None, 30.0)
+            tau_ss = tau_s0 * exp(-y_safe)
 
-            common = (tau_s0 * p_ss) / self.m * pow(x, p_ss - 1.0) * exp(-pow(x, p_ss))
+            common = (tau_s0 * p_ss) / self.m * pow(x, p_ss - 1.0) * exp(-y_safe)
 
             dsigma_ss_dL = -(common * self.m * rho_m * b) / (t_a * p_dot)
             dsigma_0_dL = dsigma_0_dL + dsigma_ss_dL
@@ -184,4 +231,6 @@ class AthermalSoluteIsotropicHardening(Model):
 
         actions["L"] = lambda V, c=dsigma_0_dL: c * V
 
-        return sigma_0, self.apply_chain_rule(v, "athermal_solute_resistance", actions, output=sigma_0)
+        return sigma_0, self.apply_chain_rule(
+            v, "athermal_solute_resistance", actions, output=sigma_0
+        )

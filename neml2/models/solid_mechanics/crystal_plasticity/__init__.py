@@ -30,11 +30,11 @@ One file per C++ header under
 re-imports each so the ``@register_neml2_object`` side effects fire on package import.
 """
 
+from .AthermalSoluteIsotropicHardening import AthermalSoluteIsotropicHardening
 from .CrystalPlasticityDeformationGradientPredictor import (
     CrystalPlasticityDeformationGradientPredictor,
 )
 from .CrystalPlasticityStrainPredictor import CrystalPlasticityStrainPredictor
-from .AthermalSoluteIsotropicHardening import AthermalSoluteIsotropicHardening
 from .DislocationObstacleStrengthMap import DislocationObstacleStrengthMap
 from .ElasticStrainRate import ElasticStrainRate
 from .FixOrientation import FixOrientation

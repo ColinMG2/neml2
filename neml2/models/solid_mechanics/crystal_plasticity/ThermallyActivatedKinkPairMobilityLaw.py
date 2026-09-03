@@ -1,15 +1,40 @@
+# Copyright 2024, UChicago Argonne, LLC
+# All Rights Reserved
+# Software Name: NEML2 -- the New Engineering material Model Library, version 2
+# By: Argonne National Laboratory
+# OPEN SOURCE LICENSE (MIT)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 from __future__ import annotations
 
-from neml2.factory import register_neml2_object
-from neml2.models.chain_rule import ChainRuleDict, ChainRuleAction
-from neml2.models.model import Model
-from neml2.schema import HitSchema, buffer, input, output, option, parameter
-from neml2.types import Scalar, exp, pow, macaulay, clamp, heaviside
 import math
+
+from neml2.factory import register_neml2_object
+from neml2.models.chain_rule import ChainRuleAction, ChainRuleDict
+from neml2.models.model import Model
+from neml2.schema import HitSchema, buffer, input, option, output, parameter
+from neml2.types import Scalar, clamp, exp, heaviside, macaulay, pow
+
 
 @register_neml2_object("ThermallyActivatedKinkPairMobilityLaw")
 class ThermallyActivatedKinkPairMobilityLaw(Model):
-
     hit = HitSchema(
         input("sigma_eff", Scalar, "Effective stress (von mises)", attr="_sigma_eff_name"),
         input("sigma_0", Scalar, "Athermal-solute resistance", attr="_sigma_0_name"),
@@ -33,7 +58,7 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
             "residual itself is untouched.",
             default=1.0e-6,
             attr="tau_hat_min",
-        )
+        ),
     )
 
     _sigma_eff_name: str
@@ -51,10 +76,10 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
     tau_hat_min: float
 
     def forward(
-            self,
-            *args: Scalar,
-            v: ChainRuleDict | None = None,
-            **_: object,
+        self,
+        *args: Scalar,
+        v: ChainRuleDict | None = None,
+        **_: object,
     ) -> Scalar | tuple[Scalar, ChainRuleDict]:
         names = list(self.input_spec)
         n_in = len(names)
@@ -72,7 +97,7 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
         H_0 = self._get_param("H_0", promoted_params, Scalar)
 
         b = math.sqrt(3) / 2 * self.a
-        h = math.sqrt(2/3) * self.a
+        h = math.sqrt(2 / 3) * self.a
         w = 25 * self.a
 
         K = (2 * h * b) / (w * B_k)
@@ -81,10 +106,11 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
         tau_1 = macaulay(tau_eff - tau_0)
         tau_tilda = tau_1 / tau_p
         tau_ratio = clamp(tau_tilda, 0.0, 1.0 - 1.0e-6)
-        dg = pow(1.0 - pow(tau_ratio, p), q) - T / T_0
+        dg = H_0 * (pow(1.0 - pow(tau_ratio, p), q) - T / T_0)
         dg1 = macaulay(dg)
-        exp_core = -H_0 * dg1 / (2.0 * self.k_B * T)
-        exp_val = exp(exp_core)
+        exp_core = -dg1 / (2.0 * self.k_B * T)
+        exp_clamp = clamp(exp_core, -100.0, 50.0)
+        exp_val = exp(exp_clamp)
         v_disl = K * tau_1 * exp_val
 
         if v is None:
@@ -98,17 +124,39 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
 
         dtau_1_dsigma_eff = heaviside(tau_eff - tau_0) * self.m
         dtau_tilda_dtau_eff = 1.0 / tau_p * dtau_1_dsigma_eff
-        ddg_dtau_eff = heaviside(dg) * q * pow(1 - pow(tau_ratio, p), q - 1.0) * -p * pow(tau_ratio_d, p - 1.0) * dtau_tilda_dtau_eff
-        dv_disl_dtau_eff = K * dtau_1_dsigma_eff * exp_val - K * tau_1 * H_0 / (2 * self.k_B * T) * ddg_dtau_eff * exp_val
+        ddg_dtau_eff = (
+            heaviside(dg)
+            * q
+            * pow(1 - pow(tau_ratio, p), q - 1.0)
+            * -p
+            * pow(tau_ratio_d, p - 1.0)
+            * dtau_tilda_dtau_eff
+        )
+        dv_disl_dtau_eff = (
+            K * dtau_1_dsigma_eff * exp_val
+            - K * tau_1 * H_0 / (2 * self.k_B * T) * ddg_dtau_eff * exp_val
+        )
         actions["sigma_eff"] = lambda V, c=dv_disl_dtau_eff: c * V
 
         dtau_1_dsigma_0 = -heaviside(tau_eff - tau_0) * self.m
         dtau_tilda_dtau_0 = 1.0 / tau_p * dtau_1_dsigma_0
-        ddg_dtau_0 = heaviside(dg) * q * pow(1.0 - pow(tau_ratio, p), q - 1.0) * -p * pow(tau_ratio_d, p - 1.0) * dtau_tilda_dtau_0
-        dv_disl_dtau_0 = K * dtau_1_dsigma_0 * exp_val - K * tau_1 * H_0 / (2.0 * self.k_B * T) * ddg_dtau_0 * exp_val
+        ddg_dtau_0 = (
+            heaviside(dg)
+            * q
+            * pow(1.0 - pow(tau_ratio, p), q - 1.0)
+            * -p
+            * pow(tau_ratio_d, p - 1.0)
+            * dtau_tilda_dtau_0
+        )
+        dv_disl_dtau_0 = (
+            K * dtau_1_dsigma_0 * exp_val
+            - K * tau_1 * H_0 / (2.0 * self.k_B * T) * ddg_dtau_0 * exp_val
+        )
         actions["sigma_0"] = lambda V, c=dv_disl_dtau_0: c * V
 
-        dexp_core_dT = H_0 / (2 * self.k_B * pow(T, 2.0)) * dg1 + H_0 / (2 * self.k_B * T * T_0) * heaviside(dg)
+        dexp_core_dT = (H_0 * heaviside(dg)) / (2.0 * self.k_B * T * T_0) + dg1 / (
+            2.0 * self.k_B * pow(T, 2.0)
+        )
         dv_disl_dT = K * tau_1 * dexp_core_dT * exp_val
         actions["T"] = lambda V, c=dv_disl_dT: c * V
 

@@ -1,16 +1,40 @@
+# Copyright 2024, UChicago Argonne, LLC
+# All Rights Reserved
+# Software Name: NEML2 -- the New Engineering material Model Library, version 2
+# By: Argonne National Laboratory
+# OPEN SOURCE LICENSE (MIT)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 from __future__ import annotations
 
 from neml2.factory import register_neml2_object
-from neml2.models.chain_rule import ChainRuleDict, ChainRuleAction
+from neml2.models.chain_rule import ChainRuleAction, ChainRuleDict
 from neml2.models.model import Model
-from neml2.schema import HitSchema, buffer, input, output, parameter, option
+from neml2.schema import HitSchema, buffer, input, option, output, parameter
 from neml2.types import Scalar, exp, pow
 
 from ._validation import unsupplied
 
+
 @register_neml2_object("KocksMeckingMobileDensityStorageRecovery")
 class KocksMeckingMobileDensityStorageRecovery(Model):
-
     hit = HitSchema(
         input("flow_rate", Scalar, "Equivalent plastic strain rate", attr="_flow_rate_name"),
         input("L", Scalar, "Mean free path", attr="_L_name"),
@@ -18,11 +42,19 @@ class KocksMeckingMobileDensityStorageRecovery(Model):
         input("T", Scalar, "Temperature", default=None, attr="_T_name"),
         output("rho_m_rate", Scalar, "Mobile dislocation density rate"),
         parameter("k1", Scalar, "Dislocation Storage coefficient"),
-        option("thermally_activated_recovery", bool, "Whether to include thermal activation for dynamic recovery coefficient", default=True, attr="thermally_activated_recovery"),
-        parameter("k2", Scalar, "Temperature-independent dynamic recovery coefficient", default=0.0),
+        option(
+            "thermally_activated_recovery",
+            bool,
+            "Whether to include thermal activation for dynamic recovery coefficient",
+            default=True,
+            attr="thermally_activated_recovery",
+        ),
+        parameter(
+            "k2", Scalar, "Temperature-independent dynamic recovery coefficient", default=0.0
+        ),
         parameter("k2_0", Scalar, "Recovery pre-exponential factor", default=0.0),
         parameter("Q_d", Scalar, "Dynamic recovery activation energy", default=0.0),
-        buffer("k_B", Scalar, "Boltzmann constant", default=0.0)
+        buffer("k_B", Scalar, "Boltzmann constant", default=0.0),
     )
 
     _flow_rate_name: str
@@ -55,10 +87,10 @@ class KocksMeckingMobileDensityStorageRecovery(Model):
                 )
 
     def forward(
-            self,
-            *args: Scalar,
-            v: ChainRuleDict | None = None,
-            **_: object,
+        self,
+        *args: Scalar,
+        v: ChainRuleDict | None = None,
+        **_: object,
     ) -> Scalar | tuple[Scalar, ChainRuleDict]:
         names = list(self.input_spec)
         n_in = len(names)
@@ -75,7 +107,8 @@ class KocksMeckingMobileDensityStorageRecovery(Model):
         if self.thermally_activated_recovery:
             if T is None:
                 raise ValueError(
-                    f"{type(self).__name__}: thermally_activated_recovery=True requires 'T' as an input."
+                    f"{type(self).__name__}: thermally_activated_recovery=True requires "
+                    f" 'T' as an input."
                 )
             k2_0 = self._get_param("k2_0", promoted_params, Scalar)
             Q_d = self._get_param("Q_d", promoted_params, Scalar)
@@ -84,14 +117,14 @@ class KocksMeckingMobileDensityStorageRecovery(Model):
         else:
             k2 = self._get_param("k2", promoted_params, Scalar)
 
-        rho_m_dot = (k1/L - k2 * rho_m) * p_dot
+        rho_m_dot = (k1 / L - k2 * rho_m) * p_dot
 
         if v is None:
             return rho_m_dot
 
         actions: dict[str, ChainRuleAction] = {}
 
-        drho_m_dot_dp_dot = k1/L - k2 * rho_m
+        drho_m_dot_dp_dot = k1 / L - k2 * rho_m
         actions["flow_rate"] = lambda V, c=drho_m_dot_dp_dot: c * V
 
         drho_m_dot_dL = -(k1 * p_dot) / pow(L, 2.0)
@@ -103,14 +136,21 @@ class KocksMeckingMobileDensityStorageRecovery(Model):
         if self.thermally_activated_recovery:
             if T is None:
                 raise ValueError(
-                    f"{type(self).__name__}: thermally_activated_recovery=True requires 'T' as an input."
+                    f"{type(self).__name__}: thermally_activated_recovery=True requires "
+                    f"'T' as an input."
                 )
             assert self.k_B is not None
 
             k2_0 = self._get_param("k2_0", promoted_params, Scalar)
             Q_d = self._get_param("Q_d", promoted_params, Scalar)
 
-            drho_m_dot_dT = - (k2_0 * Q_d) / (self.k_B * pow(T, 2.0)) * exp(-Q_d / (self.k_B * T)) * rho_m * p_dot
+            drho_m_dot_dT = (
+                -(k2_0 * Q_d)
+                / (self.k_B * pow(T, 2.0))
+                * exp(-Q_d / (self.k_B * T))
+                * rho_m
+                * p_dot
+            )
             actions["T"] = lambda V, c=drho_m_dot_dT: c * V
 
         return rho_m_dot, self.apply_chain_rule(v, "rho_m_rate", actions, output=rho_m_dot)

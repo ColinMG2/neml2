@@ -35,6 +35,36 @@ from neml2.types import Scalar, clamp, exp, heaviside, macaulay, pow
 
 @register_neml2_object("ThermallyActivatedKinkPairMobilityLaw")
 class ThermallyActivatedKinkPairMobilityLaw(Model):
+    r"""Screw-dislocation glide velocity set by thermally activated kink-pair nucleation
+    over the Peierls barrier -- the rate-limiting mechanism for BCC metals below the
+    athermal transition temperature $T_0$.
+
+    Both stress inputs arrive in **equivalent-stress space** and are resolved onto the
+    slip system here with the Schmid factor $\bar{m}$, so the driving stress is
+    $$
+    \tau^* = \left\langle \bar{m}\sigma_{\mathrm{eff}} - \bar{m}\sigma_0 \right\rangle,
+    $$
+    where $\sigma_{\mathrm{eff}}$ is the von Mises effective stress and $\sigma_0$ the
+    isotropic (athermal + solute) resistance. A resistance expressed as a *resolved
+    shear* stress -- the Taylor form $\alpha G b/L$, for instance -- must therefore be
+    divided by $\bar{m}$ before it is handed in; see
+    :class:`AthermalSoluteIsotropicHardening`, which does exactly that.
+
+    The normalized driving stress $\hat\tau = \tau^*/\tau_p$ sets the activation
+    enthalpy, which is Macaulay-clamped so it vanishes once thermal energy alone can
+    carry the kink pair over the barrier:
+    $$
+    \Delta G = H_0 \left[ \left(1 - \hat\tau^{\,p}\right)^{q} - \frac{T}{T_0} \right],
+    \qquad
+    v_{\mathrm{disl}} = \frac{2 h b}{w B_k}\, \tau^*
+        \exp\!\left(-\frac{\langle \Delta G \rangle}{2 k_B T}\right).
+    $$
+    The factor of two in the exponent is intentional: the barrier is traversed by a
+    *pair* of kinks. The kink geometry is fixed to the lattice constant $a$ as
+    $b = \tfrac{\sqrt{3}}{2}a$ (Burgers vector), $h = \sqrt{2/3}\,a$ (kink height) and
+    $w = 25a$ (kink-pair separation), and $T_0$ is conventionally $0.9\,T_m$.
+    """
+
     hit = HitSchema(
         input("sigma_eff", Scalar, "Effective stress (von mises)", attr="_sigma_eff_name"),
         input("sigma_0", Scalar, "Athermal-solute resistance", attr="_sigma_0_name"),

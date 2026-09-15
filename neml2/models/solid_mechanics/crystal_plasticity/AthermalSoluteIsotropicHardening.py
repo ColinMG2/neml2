@@ -45,8 +45,17 @@ class AthermalSoluteIsotropicHardening(Model):
     $\sigma_a$ is an Orowan-type obstacle strengthening from a population with
     mean free path $L$ calculated as:
     $$
-    \sigma_a=\frac{\alpha G b}{L}
+    \sigma_a=\frac{\alpha G b}{\bar{m} L}
     $$
+
+    Every resistance this model returns lives in **equivalent-stress space**, because
+    that is what the consumers expect: the mobility law resolves it onto the slip
+    system itself via $\tau_0 = \bar{m}\sigma_0$, and the yield surface uses it as an
+    isotropic hardening term. The Taylor expression $\alpha G b / L$ is a *resolved
+    shear* resistance, so it carries an explicit $1/\bar{m}$ here -- exactly as the
+    solute term below carries one. Dropping either $1/\bar{m}$ resolves the resistance
+    onto the slip system twice and makes the athermal barrier a factor $\bar{m}$ too
+    small.
 
     When ``include_solid_solution`` is set to ``true``, a thermally-activated solute-drag
     term $\sigma_{ss}$ describes the interaction between mobile dislocations and
@@ -61,7 +70,7 @@ class AthermalSoluteIsotropicHardening(Model):
     $$
     \tau_{ss} = \tau_{s,0} \exp\!\left[-\left(\frac{t_w}{t_a}\right)^{p_{ss}}\right],
     \qquad
-    \sigma_{ss} = \frac{\tau_{s,0}}{\bar{m}}
+    \sigma_{ss} = \frac{\tau_{ss}}{\bar{m}}
     $$
     and the total resistance is $\sigma_0 = \sigma_a + \sigma_{ss}$
     (otherwise $\sigma_0 = \sigma_a$).
@@ -69,9 +78,10 @@ class AthermalSoluteIsotropicHardening(Model):
     Note: unlike the original C++ implementation, ``temperature`` and
     ``v_disl`` are declared as *optional* inputs (only entering the model's
     dependency graph when actually supplied in the input file), but
-    ``t_a0``, ``Q_a``, ``k_B``, ``m``, ``tau_s0``, and ``p_ss`` are declared
+    ``t_a0``, ``Q_a``, ``k_B``, ``tau_s0``, and ``p_ss`` are declared
     as *required* parameters here for simplicity -- you must still supply
     them in the input file even when ``include_solid_solution = False``.
+    ``m`` is required unconditionally, since $\sigma_a$ needs it too.
     """
 
     hit = HitSchema(
@@ -99,7 +109,7 @@ class AthermalSoluteIsotropicHardening(Model):
         parameter("t_a0", Scalar, "Solute-interaction time prefactor", default=0.0),
         parameter("Q_a", Scalar, "Solute-interaction activation energy", default=0.0),
         buffer("k_B", Scalar, "Boltzmann constant", default=0.0),
-        buffer("m", Scalar, "Schmid factor", default=0.0),
+        buffer("m", Scalar, "Schmid factor"),
         parameter("tau_s0", Scalar, "Saturation solute resistance", default=0.0),
         parameter(
             "p_ss",
@@ -128,7 +138,7 @@ class AthermalSoluteIsotropicHardening(Model):
         super().__init__(**kwargs)
 
         if self.include_solid_solution:
-            required_deps = ["t_a0", "Q_a", "k_B", "m", "tau_s0", "p_ss"]
+            required_deps = ["t_a0", "Q_a", "k_B", "tau_s0", "p_ss"]
             missing = unsupplied(kwargs, required_deps)
             if missing:
                 raise ValueError(
@@ -156,7 +166,10 @@ class AthermalSoluteIsotropicHardening(Model):
         alpha = self._get_param("alpha", promoted_params, Scalar)
         b = self.b
 
-        sigma_a = alpha * G * b / L
+        # alpha*G*b/L is the Taylor *resolved shear* resistance; divide by the Schmid
+        # factor so the returned sigma_0 is in equivalent-stress space, which is what
+        # the mobility law (tau_0 = m*sigma_0) and the yield surface both assume.
+        sigma_a = alpha * G * b / (L * self.m)
         sigma_0 = sigma_a
 
         if self.include_solid_solution:

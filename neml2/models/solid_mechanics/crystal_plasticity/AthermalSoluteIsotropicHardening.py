@@ -28,7 +28,7 @@ from neml2.factory import register_neml2_object
 from neml2.models.chain_rule import ChainRuleAction, ChainRuleDict
 from neml2.models.model import Model
 from neml2.schema import HitSchema, buffer, input, option, output, parameter
-from neml2.types import Scalar, clamp, exp, pow
+from neml2.types import Scalar, clamp, exp, heaviside, pow
 
 from ._validation import unsupplied
 
@@ -96,6 +96,8 @@ class AthermalSoluteIsotropicHardening(Model):
             attr="_flow_rate_name",
         ),
         output("athermal_solute_resistance", Scalar, "Athermal solute resistance"),
+        option("flow_rate_min", float, "Add numerical guard for NR solver for flow rate",
+                default=1e-6, attr="flow_rate_min"),
         parameter("G", Scalar, "Shear Modulus"),
         parameter("alpha", Scalar, "Taylor interaction constant"),
         buffer("b", Scalar, "Burger's vector magnitude"),
@@ -123,6 +125,7 @@ class AthermalSoluteIsotropicHardening(Model):
     _T_name: str | None
     _rho_m_name: str | None
     _flow_rate_name: str | None
+    flow_rate_min: float
     G: Scalar
     alpha: Scalar
     b: Scalar
@@ -184,7 +187,9 @@ class AthermalSoluteIsotropicHardening(Model):
             rho_m0 = rho_m
             p_dot0 = p_dot
 
-            t_w = (L * self.m * rho_m0 * b) / p_dot0
+            p_dot_eff = clamp(p_dot0, self.flow_rate_min)
+
+            t_w = (L * self.m * rho_m0 * b) / p_dot_eff
 
             t_a0 = self._get_param("t_a0", promoted_params, Scalar)
             Q_a = self._get_param("Q_a", promoted_params, Scalar)
@@ -216,13 +221,17 @@ class AthermalSoluteIsotropicHardening(Model):
             assert self.m is not None
             assert self.k_B is not None
 
-            t_w = (L * self.m * rho_m * b) / p_dot
+            T0 = T
+            rho_m0 = rho_m
+            p_dot0 = p_dot
+            p_dot_eff = clamp(p_dot0, self.flow_rate_min)
+            t_w = (L * self.m * rho_m * b) / p_dot_eff
 
             t_a0 = self._get_param("t_a0", promoted_params, Scalar)
             Q_a = self._get_param("Q_a", promoted_params, Scalar)
             tau_s0 = self._get_param("tau_s0", promoted_params, Scalar)
             p_ss = self._get_param("p_ss", promoted_params, Scalar)
-            t_a = t_a0 * exp(Q_a / (self.k_B * T))
+            t_a = t_a0 * exp(Q_a / (self.k_B * T0))
             x = t_w / t_a
             y = pow(x, p_ss)
             y_safe = clamp(y, None, 30.0)
@@ -230,17 +239,23 @@ class AthermalSoluteIsotropicHardening(Model):
 
             common = (tau_s0 * p_ss) / self.m * pow(x, p_ss - 1.0) * exp(-y_safe)
 
-            dsigma_ss_dL = -(common * self.m * rho_m * b) / (t_a * p_dot)
+            dsigma_ss_dL = -(common * self.m * rho_m0 * b) / (t_a * p_dot_eff)
             dsigma_0_dL = dsigma_0_dL + dsigma_ss_dL
 
             dsigma_0_dT = -common * (t_w * t_a * Q_a) / (self.k_B * pow(t_a, 2.0) * pow(T, 2.0))
             actions["T"] = lambda V, c=dsigma_0_dT: c * V
 
-            dsigma_0_drho_m = -(common * self.m * L * b) / (t_a * p_dot)
+            dsigma_0_drho_m = -(common * self.m * L * b) / (t_a * p_dot_eff)
             actions["rho_m"] = lambda V, c=dsigma_0_drho_m: c * V
 
-            dsigma_0_dflow_rate = common * L * self.m * rho_m * b / (t_a * pow(p_dot, 2.0))
-            actions["flow_rate"] = lambda V, c=dsigma_0_dflow_rate: c * V
+            # p_dot_eff = clamp(p_dot0, self.flow_rate_min) is locally constant
+            # where the floor binds, so the true derivative w.r.t. flow_rate is
+            # zero there -- gate it the same way MeanFreePath.rho_min /
+            # ScalarExponential.exponent_max gate their own clamped inputs.
+            # (L, T, rho_m don't enter this clamp, so their actions need no gate.)
+            p_dot_live = heaviside(p_dot0 - self.flow_rate_min)
+            dsigma_0_dflow_rate = common * L * self.m * rho_m0 * b / (t_a * pow(p_dot_eff, 2.0))
+            actions["flow_rate"] = lambda V, c=dsigma_0_dflow_rate * p_dot_live: c * V
 
         actions["L"] = lambda V, c=dsigma_0_dL: c * V
 

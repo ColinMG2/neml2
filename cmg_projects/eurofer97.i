@@ -122,7 +122,7 @@
     m = 'm'
     B_k = 6.6e-11
     tau_p = 380
-    T_0 = 1811.5
+    T_0 = 1530.42175
     p = 0.6
     q = 1.95
     H_0 = 2.17
@@ -230,5 +230,4 @@
     residuals = 'stress_residual log_rho_m_residual back_stress_residual equivalent_plastic_strain_residual tau_ss_residual'
   []
 []
-
 

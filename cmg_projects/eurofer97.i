@@ -49,12 +49,6 @@
     to = 'rho_m'
     exponent_max = 50
   []
-  [flow_rate_from_log]
-    type = ScalarExponential
-    from = 'log_flow_rate'
-    to = 'flow_rate'
-    exponent_max = 50
-  []
   [L]
     type = MeanFreePath
     use_L2 = true
@@ -75,25 +69,37 @@
   []
   [isoharden]
     type = AthermalSoluteIsotropicHardening
-    G = 160156.25
+    G = 80000.0
     alpha = 0.23
     b = 'b'
     m = 'm'
-    include_solid_solution = true
+    include_solid_solution = false
+  []
+  [solute_rate]
+    type = SoluteDislocationInteractionRate
     t_a0 = 7e-9
     Q_a = 1.6
     p_ss = 0.35
     tau_s0 = 105
+    b = 'b'
+    m = 'm'
     k_B = 'k_B_eV'
     T = 'temperature'
-    rho_m = 'rho_m'
-    flow_rate = 'flow_rate'
-    flow_rate_min = 1e-6
+  []
+  [integrate_tau_ss]
+    type = ScalarBackwardEulerTimeIntegration
+    variable = 'tau_ss'
+  []
+  [isotropic_resistance]
+    type = ScalarLinearCombination
+    from = 'athermal_solute_resistance tau_ss'
+    to = 'sigma_0'
+    weights = '1 3.03030303'
   []
   [yield_surface]
     type = YieldFunction
     yield_stress = 0.0
-    isotropic_hardening = 'athermal_solute_resistance'
+    isotropic_hardening = 'sigma_0'
   []
   [flow]
     type = ComposedModel
@@ -103,13 +109,13 @@
     type = Normality
     model = 'flow'
     function = 'yield_function'
-    from = 'mandel_stress athermal_solute_resistance'
-    to = 'flow_direction athermal_solute_resistance_direction'
+    from = 'mandel_stress sigma_0'
+    to = 'flow_direction sigma_0_direction'
   []
   [v_disl]
     type = ThermallyActivatedKinkPairMobilityLaw
     sigma_eff = 'effective_stress'
-    sigma_0 = 'athermal_solute_resistance'
+    sigma_0 = 'sigma_0'
     T = 'temperature'
     a = 'a'
     k_B = 'k_B_eV'
@@ -128,20 +134,8 @@
   [p_rate]
     type = ScalarMultiplication
     from = 'gamma_dot'
-    to = 'flow_rate_computed'
+    to = 'flow_rate'
     scaling = 'm'
-  []
-  [flow_rate_computed_log]
-    type = ScalarLogarithm
-    from = 'flow_rate_computed'
-    to = 'log_flow_rate_computed'
-    floor = 1e-6
-  []
-  [flow_rate_residual]
-    type = ScalarLinearCombination
-    from = 'log_flow_rate log_flow_rate_computed'
-    to = 'flow_rate_residual'
-    weights = '1 -1'
   []
   [rho_m_rate]
     type = KocksMeckingMobileDensityStorageRecovery
@@ -168,7 +162,7 @@
   []
   [eprate]
     type = AssociativeIsotropicPlasticHardening
-    isotropic_hardening_direction = 'athermal_solute_resistance_direction'
+    isotropic_hardening_direction = 'sigma_0_direction'
   []
   [Erate]
     type = SR2VariableRate
@@ -182,7 +176,7 @@
   []
   [elasticity]
     type = LinearIsotropicElasticity
-    coefficients = '410000 0.28'
+    coefficients = '205000.0 0.28'
     coefficient_types = 'YOUNGS_MODULUS POISSONS_RATIO'
     strain = 'elastic_strain'
     rate_form = true
@@ -220,9 +214,9 @@
   []
   [implicit_rate]
     type = ComposedModel
-    models = 'mandel_stress kinharden overstress vonmises rho_m_from_log flow_rate_from_log L
-              isoharden normality v_disl gamma_rate p_rate flow_rate_computed_log
-              rho_m_rate log_rho_m_rate Eprate eprate Erate Eerate flow_rate_residual
+    models = 'mandel_stress kinharden overstress vonmises rho_m_from_log 
+              L isoharden solute_rate integrate_tau_ss isotropic_resistance normality v_disl
+              gamma_rate p_rate rho_m_rate log_rho_m_rate Eprate eprate Erate Eerate
               elasticity integrate_log_rho_m integrate_stress integrate_ep
               integrate_X mixed mixed_old'
   []
@@ -232,8 +226,8 @@
   [eq_sys]
     type = NonlinearSystem
     model = 'implicit_rate'
-    unknowns = 'mixed_state log_rho_m back_stress equivalent_plastic_strain log_flow_rate'
-    residuals = 'stress_residual log_rho_m_residual back_stress_residual equivalent_plastic_strain_residual flow_rate_residual'
+    unknowns = 'mixed_state log_rho_m back_stress equivalent_plastic_strain tau_ss'
+    residuals = 'stress_residual log_rho_m_residual back_stress_residual equivalent_plastic_strain_residual tau_ss_residual'
   []
 []
 

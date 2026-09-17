@@ -54,6 +54,7 @@ from .SingleSlipStrengthMap import SingleSlipStrengthMap
 from .SlipRule import SlipRule
 from .SlipStrengthMap import SlipStrengthMap
 from .SlipSystemElasticInteraction import SlipSystemElasticInteraction
+from .SoluteDislocationInteractionRate import SoluteDislocationInteractionRate
 from .SumSlipRates import SumSlipRates
 from .ThermallyActivatedKinkPairMobilityLaw import ThermallyActivatedKinkPairMobilityLaw
 from .VoceSingleSlipHardeningRule import VoceSingleSlipHardeningRule
@@ -81,6 +82,7 @@ __all__ = [
     "SingleSlipStrengthMap",
     "SlipRule",
     "SlipStrengthMap",
+    "SoluteDislocationInteractionRate",
     "SumSlipRates",
     "ThermallyActivatedKinkPairMobilityLaw",
     "VoceSingleSlipHardeningRule",

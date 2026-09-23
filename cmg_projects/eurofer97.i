@@ -85,6 +85,8 @@
     m = 'm'
     k_B = 'k_B_eV'
     T = 'temperature'
+    flow_rate = 'flow_rate'
+    flow_rate_min = 1e-12
   []
   [integrate_tau_ss]
     type = ScalarBackwardEulerTimeIntegration
@@ -109,8 +111,8 @@
     type = Normality
     model = 'flow'
     function = 'yield_function'
-    from = 'mandel_stress sigma_0'
-    to = 'flow_direction sigma_0_direction'
+    from = 'mandel_stress'
+    to = 'flow_direction'
   []
   [v_disl]
     type = ThermallyActivatedKinkPairMobilityLaw
@@ -126,6 +128,9 @@
     p = 0.6
     q = 1.95
     H_0 = 2.17
+    # Above ~530 K the imposed rate is carried by tau* << 1 MPa, i.e. the solution sits
+    # on the corner of <tau_eff - tau_0>; smooth it so Newton stops cycling across it.
+    smoothing_width = 0.1
   []
   [gamma_rate]
     type = OrowanPlasticShearRate
@@ -160,10 +165,6 @@
   [Eprate]
     type = AssociativePlasticFlow
   []
-  [eprate]
-    type = AssociativeIsotropicPlasticHardening
-    isotropic_hardening_direction = 'sigma_0_direction'
-  []
   [Erate]
     type = SR2VariableRate
     variable = 'strain'
@@ -193,10 +194,6 @@
     type = SR2BackwardEulerTimeIntegration
     variable = 'back_stress'
   []
-  [integrate_ep]
-    type = ScalarBackwardEulerTimeIntegration
-    variable = 'equivalent_plastic_strain'
-  []
   [mixed]
     type = MixedControlSetup
     x_above = 'fixed_values'
@@ -216,8 +213,8 @@
     type = ComposedModel
     models = 'mandel_stress kinharden overstress vonmises rho_m_from_log 
               L isoharden solute_rate integrate_tau_ss isotropic_resistance normality v_disl
-              gamma_rate p_rate rho_m_rate log_rho_m_rate Eprate eprate Erate Eerate
-              elasticity integrate_log_rho_m integrate_stress integrate_ep
+              gamma_rate p_rate rho_m_rate log_rho_m_rate Eprate Erate Eerate
+              elasticity integrate_log_rho_m integrate_stress
               integrate_X mixed mixed_old'
   []
 []
@@ -226,8 +223,8 @@
   [eq_sys]
     type = NonlinearSystem
     model = 'implicit_rate'
-    unknowns = 'mixed_state log_rho_m back_stress equivalent_plastic_strain tau_ss'
-    residuals = 'stress_residual log_rho_m_residual back_stress_residual equivalent_plastic_strain_residual tau_ss_residual'
+    unknowns = 'mixed_state log_rho_m back_stress tau_ss'
+    residuals = 'stress_residual log_rho_m_residual back_stress_residual tau_ss_residual'
   []
 []
 

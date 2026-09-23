@@ -30,7 +30,7 @@ from neml2.factory import register_neml2_object
 from neml2.models.chain_rule import ChainRuleAction, ChainRuleDict
 from neml2.models.model import Model
 from neml2.schema import HitSchema, buffer, input, option, output, parameter
-from neml2.types import Scalar, clamp, exp, heaviside, macaulay, pow
+from neml2.types import Scalar, clamp, exp, heaviside, log, macaulay, pow
 
 
 @register_neml2_object("ThermallyActivatedKinkPairMobilityLaw")
@@ -63,6 +63,16 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
     *pair* of kinks. The kink geometry is fixed to the lattice constant $a$ as
     $b = \tfrac{\sqrt{3}}{2}a$ (Burgers vector), $h = \sqrt{2/3}\,a$ (kink height) and
     $w = 25a$ (kink-pair separation), and $T_0$ is conventionally $0.9\,T_m$.
+
+    Above roughly $0.35\,T_0$ the zero-stress factor
+    $\exp(-H_0 (1 - T/T_0) / 2 k_B T)$ is large enough that the imposed strain rate
+    is carried by $\tau^* \ll 1$ MPa, so the implicit solution sits on the corner of
+    the Macaulay bracket: the plastic Jacobian jumps from zero (elastic side) to
+    $\bar{m}^2 K \exp(\cdot)$ (plastic side) and Newton cycles between the two
+    branches. Setting ``smoothing_width`` $= s > 0$ replaces the bracket with the
+    softplus $\tau^* = s \ln(1 + e^{x/s})$, $x = \bar{m}(\sigma_{\mathrm{eff}} -
+    \sigma_0)$, whose derivative is the logistic $1/(1 + e^{-x/s})$. The shift in
+    flow stress is $O(s)$; $s \approx 0.1$ MPa is enough to remove the corner.
     """
 
     hit = HitSchema(
@@ -89,6 +99,16 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
             default=1.0e-6,
             attr="tau_hat_min",
         ),
+        option(
+            "smoothing_width",
+            float,
+            "Resolved-stress width (stress units) of the softplus that replaces the "
+            "Macaulay bracket <m*sigma_eff - m*sigma_0>. 0 keeps the exact bracket; a "
+            "small positive value (~0.1 MPa) removes the yield corner that stalls "
+            "Newton near the athermal plateau.",
+            default=0.0,
+            attr="smoothing_width",
+        ),
     )
 
     _sigma_eff_name: str
@@ -104,6 +124,16 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
     q: Scalar
     H_0: Scalar
     tau_hat_min: float
+    smoothing_width: float
+
+    def _driving_stress(self, x: Scalar) -> tuple[Scalar, Scalar]:
+        """Driving stress $\\tau^*(x)$ and its slope $d\\tau^*/dx$."""
+        s = self.smoothing_width
+        if s <= 0.0:
+            return macaulay(x), heaviside(x)
+        # Overflow-safe softplus: <x> + s*ln(1 + exp(-|x|/s)).
+        abs_x = macaulay(x) + macaulay(-x)
+        return macaulay(x) + s * log(1.0 + exp(-abs_x / s)), 1.0 / (1.0 + exp(-x / s))
 
     def forward(
         self,
@@ -133,7 +163,7 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
         K = (2 * h * b) / (w * B_k)
         tau_eff = self.m * sigma_eff
         tau_0 = self.m * sigma_0
-        tau_1 = macaulay(tau_eff - tau_0)
+        tau_1, dtau_1_dx = self._driving_stress(tau_eff - tau_0)
         tau_tilda = tau_1 / tau_p
         tau_ratio = clamp(tau_tilda, 0.0, 1.0 - 1.0e-6)
         dg = H_0 * (pow(1.0 - pow(tau_ratio, p), q) - T / T_0)
@@ -152,7 +182,7 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
         # makes tau_ratio**(p-1) singular as tau* -> 0, i.e. at every elastic step.
         tau_ratio_d = clamp(tau_ratio, self.tau_hat_min, 1.0 - 1.0e-6)
 
-        dtau_1_dsigma_eff = heaviside(tau_eff - tau_0) * self.m
+        dtau_1_dsigma_eff = dtau_1_dx * self.m
         dtau_tilda_dtau_eff = 1.0 / tau_p * dtau_1_dsigma_eff
         ddg_dtau_eff = (
             heaviside(dg)
@@ -168,7 +198,7 @@ class ThermallyActivatedKinkPairMobilityLaw(Model):
         )
         actions["sigma_eff"] = lambda V, c=dv_disl_dtau_eff: c * V
 
-        dtau_1_dsigma_0 = -heaviside(tau_eff - tau_0) * self.m
+        dtau_1_dsigma_0 = -dtau_1_dx * self.m
         dtau_tilda_dtau_0 = 1.0 / tau_p * dtau_1_dsigma_0
         ddg_dtau_0 = (
             heaviside(dg)

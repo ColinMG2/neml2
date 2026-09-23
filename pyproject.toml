@@ -57,7 +57,7 @@ build.targets = ["aoti", "eager", "pyneml2", "cpp_tests"]
 [project]
 name = "neml2"
 # dependencies: neml2.version
-version = "3.0.7"
+version = "3.1.0"
 authors = [
   { name = "Mark Messner", email = "messner@anl.gov" },
   { name = "Gary Hu", email = "thu@anl.gov" },
@@ -72,7 +72,7 @@ dependencies = [
   # so we let the user opt in rather than block the install. See
   # doc/content/installation/compatibility.md for the regression-tested set.
   # dependencies: torch.version_min
-  "torch>=2.10.0",
+  "torch>=2.10.0a0",
   # dependencies: pyzag.version
   "pyzag==2.0.0",
   # dependencies: nmhit.version_min
@@ -89,10 +89,10 @@ dev = [
   "nbmake",
   # lint + format
   # dependencies: ruff.version
-  "ruff==0.16.5",
+  "ruff==0.16.8",
   # typecheck
   # dependencies: pyright.version
-  "pyright==1.1.411",
+  "pyright==1.1.414",
   "PyYAML",
   "matplotlib",
   "numpy",

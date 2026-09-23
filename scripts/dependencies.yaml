@@ -47,13 +47,13 @@ clang_format:
     - .pre-commit-config.yaml
 
 ruff:
-  version: "0.16.5"
+  version: "0.16.8"
   files:
     - .pre-commit-config.yaml
     - pyproject.toml
 
 pyright:
-  version: "1.1.411"
+  version: "1.1.414"
   files:
     - pyproject.toml
 
@@ -94,7 +94,7 @@ python:
 
 # ---- Project version ----
 neml2:
-  version: "3.0.7"
+  version: "3.1.0"
   files:
     - CMakeLists.txt
     - pyproject.toml

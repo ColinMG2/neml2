@@ -106,6 +106,7 @@ from .ParameterToVariable import (
     VecParameterToVariable,
     WR2ParameterToVariable,
 )
+from .QuadraticInterpolation import ScalarQuadraticInterpolation
 from .R2Multiplication import R2Multiplication
 from .R2ToSR2 import R2ToSR2
 from .R2ToWR2 import R2ToWR2
@@ -185,6 +186,7 @@ __all__ = [
     "VecParameterToVariable",
     "WR2ParameterToVariable",
     "ScalarLinearInterpolation",
+    "ScalarQuadraticInterpolation",
     "ScalarBilinearInterpolation",
     "SR2BilinearInterpolation",
     "VecBilinearInterpolation",

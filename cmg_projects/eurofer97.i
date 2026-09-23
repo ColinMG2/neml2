@@ -22,6 +22,38 @@
 []
 
 [Models]
+  [E]
+    type = ScalarQuadraticInterpolation
+    a = -7.626e-2
+    b = 0.01879e3
+    c = 207.968e3
+    argument = 'temperature'
+  []
+  [nu]
+    type = ScalarQuadraticInterpolation
+    a = 1.609e-9
+    b = -4.449e-5
+    c = 0.302
+    argument = 'temperature'
+  []
+  [G_bottom_inner]
+    type = ScalarLinearCombination
+    from = 'nu'
+    to = 'G_bottom_inner'
+    offset = '1'
+  []
+  [G_bottom]
+    type = ScalarMultiplication
+    from = 'G_bottom_inner'
+    to = 'G_bottom'
+    scaling = 2
+  []
+  [G]
+    type = ScalarMultiplication
+    from = 'E G_bottom'
+    to = 'G'
+    reciprocal = 'false true'
+  []
   [mandel_stress]
     type = IsotropicMandelStress
     cauchy_stress = 'stress'
@@ -69,7 +101,7 @@
   []
   [isoharden]
     type = AthermalSoluteIsotropicHardening
-    G = 80000.0
+    G = 'G'
     alpha = 0.23
     b = 'b'
     m = 'm'
@@ -177,7 +209,7 @@
   []
   [elasticity]
     type = LinearIsotropicElasticity
-    coefficients = '205000.0 0.28'
+    coefficients = 'E nu'
     coefficient_types = 'YOUNGS_MODULUS POISSONS_RATIO'
     strain = 'elastic_strain'
     rate_form = true
@@ -211,7 +243,7 @@
   []
   [implicit_rate]
     type = ComposedModel
-    models = 'mandel_stress kinharden overstress vonmises rho_m_from_log 
+    models = 'G_bottom_inner G_bottom mandel_stress kinharden overstress vonmises rho_m_from_log 
               L isoharden solute_rate integrate_tau_ss isotropic_resistance normality v_disl
               gamma_rate p_rate rho_m_rate log_rho_m_rate Eprate Erate Eerate
               elasticity integrate_log_rho_m integrate_stress

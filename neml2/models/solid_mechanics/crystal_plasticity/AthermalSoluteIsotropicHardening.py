@@ -96,9 +96,14 @@ class AthermalSoluteIsotropicHardening(Model):
             attr="_flow_rate_name",
         ),
         output("athermal_solute_resistance", Scalar, "Athermal solute resistance"),
-        option("flow_rate_min", float, "Add numerical guard for NR solver for flow rate",
-                default=1e-6, attr="flow_rate_min"),
-        parameter("G", Scalar, "Shear Modulus"),
+        option(
+            "flow_rate_min",
+            float,
+            "Add numerical guard for NR solver for flow rate",
+            default=1e-6,
+            attr="flow_rate_min",
+        ),
+        parameter("G", Scalar, "Shear Modulus", allow_promotion=True),
         parameter("alpha", Scalar, "Taylor interaction constant"),
         buffer("b", Scalar, "Burger's vector magnitude"),
         option(
@@ -156,9 +161,11 @@ class AthermalSoluteIsotropicHardening(Model):
         **_: object,
     ) -> Scalar | tuple[Scalar, ChainRuleDict]:
         names = list(self.input_spec)
-        n_in = len(names)
+        # Promoted parameters are appended to input_spec; they belong to the
+        # promoted_params pack, not the structural inputs.
+        n_in = len(names) - len(self._promoted_params)
         inputs, promoted_params = args[:n_in], args[n_in:]
-        bound = dict(zip(names, inputs, strict=True))
+        bound = dict(zip(names[:n_in], inputs, strict=True))
 
         L = bound[self._L_name]
         T = bound.get(self._T_name) if self._T_name is not None else None
@@ -258,6 +265,11 @@ class AthermalSoluteIsotropicHardening(Model):
             actions["flow_rate"] = lambda V, c=dsigma_0_dflow_rate * p_dot_live: c * V
 
         actions["L"] = lambda V, c=dsigma_0_dL: c * V
+
+        # G may be coupled to an upstream variable (e.g. temperature-dependent
+        # shear modulus); sigma_a is linear in G, so d sigma_0 / d G = sigma_a / G.
+        if "G" in self._promoted_params:
+            actions[self._promoted_params["G"].input_name] = lambda V, c=sigma_a / G: c * V
 
         return sigma_0, self.apply_chain_rule(
             v, "athermal_solute_resistance", actions, output=sigma_0

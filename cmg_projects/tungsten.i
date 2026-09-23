@@ -16,14 +16,9 @@
 # gamma_dot = rho_m*b*v is [L^-2][L][L/s] = 1/s. Flow stresses in MPa are
 # therefore invariant under this change -- if they move, something is wrong.
 [Tensors]
-  [C]
-    # MPa
+  [a]
     type = Python
-    expr = 'Scalar(0.0)'
-  []
-  [g]
-    type = Python
-    expr = 'Scalar(0.0)'
+    expr = 'Scalar(3.16e-4)'
   []
   [b]
     # um  (Burgers vector, a*sqrt(3)/2)
@@ -43,14 +38,46 @@
 []
 
 [Models]
+  [E]
+    type = ScalarQuadraticInterpolation
+    a = -2.716e-2
+    b = 0.01253e3
+    c = 396.507e3
+    argument = 'temperature'
+  []
+  [nu]
+    type = ScalarQuadraticInterpolation
+    a = 3.157e-9
+    b = -8.030e-6
+    c = 0.285
+    argument = 'temperature'
+  []
+  [G_bottom_inner]
+    type = ScalarLinearCombination
+    from = 'nu'
+    to = 'G_bottom_inner'
+    offset = '1'
+  []
+  [G_bottom]
+    type = ScalarMultiplication
+    from = 'G_bottom_inner'
+    to = 'G_bottom'
+    scaling = 2
+  []
+  [G]
+    type = ScalarMultiplication
+    from = 'E G_bottom'
+    to = 'G'
+    reciprocal = 'false true'
+  []
   [mandel_stress]
     type = IsotropicMandelStress
     cauchy_stress = 'stress'
   []
   [kinharden]
     type = FredrickArmstrongPlasticHardening
-    C = 'C'
-    g = 'g'
+    C = 0.0
+    g = 0.0
   []
   [overstress]
     type = SR2LinearCombination
@@ -100,7 +127,7 @@
   []
   [isoharden]
     type = AthermalSoluteIsotropicHardening
-    G = 160156.25
+    G = 'G'
     # Taylor coefficient of the resolved-shear athermal resistance, tau_a = alpha*G*b/L.
     # The model returns sigma_a = tau_a/m and the mobility law resolves it back with the
     # same m, so alpha here is the literature resolved-shear value -- NOT a stress-space
@@ -124,15 +151,15 @@
     type = Normality
     model = 'flow'
     function = 'yield_function'
-    from = 'mandel_stress athermal_solute_resistance'
-    to = 'flow_direction athermal_solute_resistance_direction'
+    from = 'mandel_stress'
+    to = 'flow_direction'
   []
   [v_disl]
     type = ThermallyActivatedKinkPairMobilityLaw
     sigma_eff = 'effective_stress'
     sigma_0 = 'athermal_solute_resistance'
     T = 'temperature'
-    a = 3.16e-4
+    a = 'a'
     # um (lattice constant)
     k_B = 'k_B_eV'
     m = 'm'
@@ -184,10 +211,6 @@
   [Eprate]
     type = AssociativePlasticFlow
   []
-  [eprate]
-    type = AssociativeIsotropicPlasticHardening
-    isotropic_hardening_direction = 'athermal_solute_resistance_direction'
-  []
   [Erate]
     type = SR2VariableRate
     variable = 'strain'
@@ -200,7 +223,7 @@
   []
   [elasticity]
     type = LinearIsotropicElasticity
-    coefficients = '410000 0.28'
+    coefficients = 'E nu'
     coefficient_types = 'YOUNGS_MODULUS POISSONS_RATIO'
     strain = 'elastic_strain'
     rate_form = true
@@ -216,10 +239,6 @@
   [integrate_X]
     type = SR2BackwardEulerTimeIntegration
     variable = 'back_stress'
-  []
-  [integrate_ep]
-    type = ScalarBackwardEulerTimeIntegration
-    variable = 'equivalent_plastic_strain'
   []
   [mixed]
     type = MixedControlSetup
@@ -238,10 +257,10 @@
   []
   [implicit_rate]
     type = ComposedModel
-    models = 'mandel_stress kinharden overstress vonmises rho_m_from_log L
-              isoharden normality v_disl gamma_rate p_rate
-              rho_m_rate log_rho_m_rate Eprate eprate Erate Eerate
-              elasticity integrate_log_rho_m integrate_stress integrate_ep
+    models = 'G_bottom_inner G_bottom mandel_stress kinharden overstress 
+              vonmises rho_m_from_log L isoharden normality v_disl gamma_rate 
+              p_rate rho_m_rate log_rho_m_rate Eprate Erate Eerate
+              elasticity integrate_log_rho_m integrate_stress
               integrate_X mixed mixed_old'
   []
 []
@@ -250,8 +269,8 @@
   [eq_sys]
     type = NonlinearSystem
     model = 'implicit_rate'
-    unknowns = 'mixed_state log_rho_m back_stress equivalent_plastic_strain'
-    residuals = 'stress_residual log_rho_m_residual back_stress_residual equivalent_plastic_strain_residual'
+    unknowns = 'mixed_state log_rho_m back_stress'
+    residuals = 'stress_residual log_rho_m_residual back_stress_residual'
   []
 []
 

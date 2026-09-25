@@ -120,20 +120,12 @@
     d_packet = 1.0
     c_PAG = 0.0
     d_PAG = 1.0
-    # um^-2. Numerical floor only (guards sqrt(rho_m) against a Newton iterate at
-    # or below zero); it carries the same units as rho_m, so it MUST be converted
-    # alongside the other length-dimensioned inputs. 1e3 mm^-2 == 1e-3 um^-2.
     rho_min = 1e-3
   []
   [isoharden]
     type = AthermalSoluteIsotropicHardening
     G = 'G'
-    # Taylor coefficient of the resolved-shear athermal resistance, tau_a = alpha*G*b/L.
-    # The model returns sigma_a = tau_a/m and the mobility law resolves it back with the
-    # same m, so alpha here is the literature resolved-shear value -- NOT a stress-space
-    # surrogate. Reference value is 0.23; 0.2192 is a refit to the ATW plateau flow
-    # stress over 250/400/550 C x 6.4e-{4,3,2} /s (RMS 1.6%, vs 8.1% at 0.23).
-    alpha = 0.2192
+    alpha = 0.23
     b = 'b'
     m = 'm'
     include_solid_solution = false
@@ -169,6 +161,7 @@
     p = 0.6
     q = 1.4
     H_0 = 2.55
+    smoothing_width = 0.1
   []
   [gamma_rate]
     type = OrowanPlasticShearRate
@@ -182,18 +175,11 @@
   []
   [rho_m_rate]
     type = KocksMeckingMobileDensityStorageRecovery
-    # Only k2_0/k1 (and Lambda_micro = c_lath/d_lath) set the saturated density, so it is
-    # the ratio that pins the saturated flow stress: k2_0/k1 = 0.1 um and Q_d = 0.011 eV
-    # were recovered from the MOOSE reference steady states (relative residual 1.6e-10).
-    # The absolute magnitudes only set how fast rho_m saturates; these reproduce MOOSE's
-    # rho_m(p) transient too. MOOSE drives rho_m_dot with the shear rate gamma_dot using
-    # k1 = 1500, k2_0 = 150 -- these are those divided by m, because this model is wired
-    # to flow_rate = p_dot = m*gamma_dot.
-    k1 = 5250.0
+    k1 = 3.0e4
     # um^-1 (storage coefficient)
     thermally_activated_recovery = true
-    k2_0 = 525.0
-    Q_d = 0.011
+    k2_0 = 6000
+    Q_d = 0.01
     k_B = 'k_B_eV'
     T = 'temperature'
   []

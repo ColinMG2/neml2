@@ -92,7 +92,7 @@
     c_packet = 0.0
     d_packet = 1.0
     c_PAG = 0.1
-    d_PAG = 7.0
+    d_PAG = 21.0
     c_MX = 0.3
     d_MX = 1.5
     c_M23C6 = 0.2
@@ -102,17 +102,17 @@
   [isoharden]
     type = AthermalSoluteIsotropicHardening
     G = 'G'
-    alpha = 0.23
+    alpha = 0.2
     b = 'b'
     m = 'm'
     include_solid_solution = false
   []
   [solute_rate]
     type = SoluteDislocationInteractionRate
-    t_a0 = 7e-9
-    Q_a = 1.6
-    p_ss = 0.35
-    tau_s0 = 105
+    t_a0 = 5e-8
+    Q_a = 1.24
+    p_ss = 0.5
+    tau_s0 = 100
     b = 'b'
     m = 'm'
     k_B = 'k_B_eV'
@@ -155,10 +155,10 @@
     k_B = 'k_B_eV'
     m = 'm'
     B_k = 6.6e-11
-    tau_p = 380
+    tau_p = 360
     T_0 = 1530.42175
-    p = 0.6
-    q = 1.95
+    p = 0.65
+    q = 1.7
     H_0 = 2.17
     # Above ~530 K the imposed rate is carried by tau* << 1 MPa, i.e. the solution sits
     # on the corner of <tau_eff - tau_0>; smooth it so Newton stops cycling across it.
@@ -179,7 +179,7 @@
     k1 = 7.8e4
     thermally_activated_recovery = true
     k2_0 = 6750
-    Q_d = 0.007
+    Q_d = 0.015
     k_B = 'k_B_eV'
     T = 'temperature'
   []

@@ -175,11 +175,11 @@
   []
   [rho_m_rate]
     type = KocksMeckingMobileDensityStorageRecovery
-    k1 = 3.0e4
+    k1 = 5250
     # um^-1 (storage coefficient)
     thermally_activated_recovery = true
-    k2_0 = 6000
-    Q_d = 0.01
+    k2_0 = 525
+    Q_d = 0.011
     k_B = 'k_B_eV'
     T = 'temperature'
   []

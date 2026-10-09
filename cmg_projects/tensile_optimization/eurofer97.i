@@ -162,7 +162,7 @@
     H_0 = 2.17
     # Above ~530 K the imposed rate is carried by tau* << 1 MPa, i.e. the solution sits
     # on the corner of <tau_eff - tau_0>; smooth it so Newton stops cycling across it.
-    smoothing_width = 0.1
+    smoothing_width = 0.5
   []
   [gamma_rate]
     type = OrowanPlasticShearRate

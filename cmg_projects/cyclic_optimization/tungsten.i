@@ -125,7 +125,7 @@
   [isoharden]
     type = AthermalSoluteIsotropicHardening
     G = 'G'
-    alpha = 0.23
+    alpha = 0.2
     b = 'b'
     m = 'm'
     include_solid_solution = false

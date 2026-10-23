@@ -58,10 +58,34 @@
     type = IsotropicMandelStress
     cauchy_stress = 'stress'
   []
+  [X1rate]
+    type = ChabochePlasticHardening
+    back_stress = 'X1'
+    C = 35000
+    g = 190
+    A = 0
+    a = 0
+  []
+  [X2rate]
+    type = ChabochePlasticHardening
+    back_stress = 'X2'
+    C = 35000
+    g = 190
+    A = 0
+    a = 0
+  []
+  [X3rate]
+    type = ChabochePlasticHardening
+    back_stress = 'X3'
+    C = 35000
+    g = 190
+    A = 0
+    a = 0
+  []
   [kinharden]
-    type = FredrickArmstrongPlasticHardening
-    C = 35.0e3
-    g = 190.0
+    type = SR2LinearCombination
+    from = 'X1 X2 X3'
+    to = 'back_stress'
   []
   [overstress]
     type = SR2LinearCombination
@@ -222,9 +246,17 @@
     type = SR2BackwardEulerTimeIntegration
     variable = 'stress'
   []
-  [integrate_X]
+  [integrate_X1]
     type = SR2BackwardEulerTimeIntegration
-    variable = 'back_stress'
+    variable = 'X1'
+  []
+  [integrate_X2]
+    type = SR2BackwardEulerTimeIntegration
+    variable = 'X2'
+  []
+  [integrate_X3]
+    type = SR2BackwardEulerTimeIntegration
+    variable = 'X3'
   []
   [mixed]
     type = MixedControlSetup
@@ -243,11 +275,11 @@
   []
   [implicit_rate]
     type = ComposedModel
-    models = 'G_bottom_inner G_bottom mandel_stress kinharden overstress vonmises rho_m_from_log 
-              L isoharden solute_rate integrate_tau_ss isotropic_resistance normality v_disl
+    models = 'G_bottom_inner G_bottom mandel_stress X1rate X2rate X3rate kinharden overstress vonmises
+              rho_m_from_log L isoharden solute_rate integrate_tau_ss isotropic_resistance normality v_disl
               gamma_rate p_rate rho_m_rate log_rho_m_rate Eprate Erate Eerate
               elasticity integrate_log_rho_m integrate_stress
-              integrate_X mixed mixed_old'
+              integrate_X1 integrate_X2 integrate_X3 mixed mixed_old'
   []
 []
 
@@ -255,8 +287,8 @@
   [eq_sys]
     type = NonlinearSystem
     model = 'implicit_rate'
-    unknowns = 'mixed_state log_rho_m back_stress tau_ss'
-    residuals = 'stress_residual log_rho_m_residual back_stress_residual tau_ss_residual'
+    unknowns = 'mixed_state log_rho_m X1 X2 X3 tau_ss'
+    residuals = 'stress_residual log_rho_m_residual X1_residual X2_residual X3_residual tau_ss_residual'
   []
 []
 

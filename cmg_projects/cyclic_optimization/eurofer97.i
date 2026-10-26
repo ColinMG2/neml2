@@ -61,24 +61,24 @@
   [X1rate]
     type = ChabochePlasticHardening
     back_stress = 'X1'
-    C = 35000
-    g = 190
+    C = 7000
+    g = 600
     A = 0
     a = 0
   []
   [X2rate]
     type = ChabochePlasticHardening
     back_stress = 'X2'
-    C = 35000
-    g = 190
+    C = 6000
+    g = 130
     A = 0
     a = 0
   []
   [X3rate]
     type = ChabochePlasticHardening
     back_stress = 'X3'
-    C = 35000
-    g = 190
+    C = 5000
+    g = 10
     A = 0
     a = 0
   []
